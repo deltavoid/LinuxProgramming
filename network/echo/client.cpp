@@ -22,7 +22,7 @@ int sock_fds[max_conn];
 pthread_t sock_threads[max_conn];
 
 int conn_num = 10;
-int request_num = 1000;
+int request_num = 100;
 int buf_size = 4096;
 
 
