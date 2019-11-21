@@ -1,0 +1,16 @@
+
+
+Linux module
+
+https://blog.csdn.net/Zach_z/article/details/80709918
+
+http://www.voidcn.com/article/p-bbjeohqa-bt.html
+
+https://learn-linux.readthedocs.io/zh_CN/latest/system-programming/kernel-programming/module-development.html
+
+
+https://wiki.archlinux.org/index.php/Kernel_module_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)
+
+https://www.infoq.cn/article/linux-kernel-module-part01
+
+http://www.voidcn.com/article/p-grghdnxa-tb.html

@@ -1,0 +1,13 @@
+
+
+
+make 
+
+
+sudo insmod hello.ko
+// sudo modprobe hello (if hello is in /lib/modules)
+
+
+cat /var/log/syslog | grep hello
+// dmesg | grep hello
+
