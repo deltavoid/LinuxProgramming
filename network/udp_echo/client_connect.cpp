@@ -22,18 +22,29 @@ void* client(void* arg)
     int fd = *(int*)arg;
     char buf[buf_size];
 
-    struct sockaddr_in recv_server_addr;
-    socklen_t socklen = sizeof(struct sockaddr);
+    // struct sockaddr_in recv_server_addr;
+    // socklen_t socklen = sizeof(struct sockaddr);
+
+    // for (int i = 0; i < request_num; i++)
+    // {
+    //     int send_len = sendto(fd, buf, buf_size, 0, (struct sockaddr*)&server_addr, sizeof(struct sockaddr));
+    //     printf("client send %d bytes to %s:%d\n", 
+    //             send_len, inet_ntoa(server_addr.sin_addr), ntohs(server_addr.sin_port));
+
+    //     int recv_len = recvfrom(fd, buf, buf_size, 0, (struct sockaddr*)&recv_server_addr, &socklen);
+    //     printf("client recv %d bytes from %s:%d\n", 
+    //             recv_len, inet_ntoa(recv_server_addr.sin_addr), ntohs(recv_server_addr.sin_port));
+    //     printf("\n");
+    //     sleep(1);
+    // }
 
     for (int i = 0; i < request_num; i++)
     {
-        int send_len = sendto(fd, buf, buf_size, 0, (struct sockaddr*)&server_addr, sizeof(struct sockaddr));
-        printf("client send %d bytes to %s:%d\n", 
-                send_len, inet_ntoa(server_addr.sin_addr), ntohs(server_addr.sin_port));
+        int send_len = send(fd, buf, buf_size, 0);
+        printf("client send %d bytes\n", send_len);
 
-        int recv_len = recvfrom(fd, buf, buf_size, 0, (struct sockaddr*)&recv_server_addr, &socklen);
-        printf("client recv %d bytes from %s:%d\n", 
-                recv_len, inet_ntoa(recv_server_addr.sin_addr), ntohs(recv_server_addr.sin_port));
+        int recv_len = recv(fd, buf, buf_size, 0);
+        printf("client recv %d bytes\n", recv_len);
         printf("\n");
         sleep(1);
     }
@@ -64,6 +75,8 @@ int main(int argc, char** argv)
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr = *((struct in_addr*)he->h_addr);
     server_addr.sin_port = htons(port);
+
+    if  (connect(fd, (struct sockaddr*)&server_addr, sizeof(struct sockaddr)) == -1)  perror("connect error");
 
     
     client(&fd);
