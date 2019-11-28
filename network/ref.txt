@@ -1,0 +1,37 @@
+
+
+udp programming
+
+
+server          client
+
+socket          socket
+
+bind
+
+recvfrom        sendto
+
+sendto          recvfrom
+
+close           close
+
+
+
+https://www.cnblogs.com/skyfsm/p/6287787.html
+
+
+
+ipv6
+
+https://blog.csdn.net/hepeng597/article/details/7803277
+
+
+gethostbyname 
+
+https://www.cnblogs.com/cxz2009/archive/2010/11/19/1881611.html
+
+
+struct sockaddr;
+struct sockaddr_in;
+struct sockaddr_in6;
+
