@@ -44,6 +44,7 @@ void* client(void* arg)
     }
 
     close(fd);
+    return NULL;
 }
 
 

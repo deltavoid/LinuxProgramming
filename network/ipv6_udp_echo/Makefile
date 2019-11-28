@@ -6,7 +6,7 @@ run_server: server
 	./server
 
 run_client: client
-	./client 127.0.0.1
+	./client ::1
 
 server: server.cpp
 	g++ -o $@ $^ 
