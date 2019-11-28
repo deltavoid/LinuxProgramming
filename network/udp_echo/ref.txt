@@ -1,0 +1,23 @@
+
+
+udp programming
+
+
+server          client
+
+socket          socket
+
+bind
+
+recvfrom        sendto
+
+sendto          recvfrom
+
+close           close
+
+
+
+https://www.cnblogs.com/skyfsm/p/6287787.html
+
+
+https://blog.csdn.net/qq_29344757/article/details/71616748
