@@ -24,4 +24,4 @@ client: client.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
 
 clean:
-	-rm client server
+	-rm client server server_epoll
