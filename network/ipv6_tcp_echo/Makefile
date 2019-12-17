@@ -11,7 +11,7 @@ run_server: server
 #	./server_epoll
 
 run_client: client
-	./client ::1
+	./client fe81::f843:caff:fe2c:60e0 3
 
 server: server.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
