@@ -57,8 +57,8 @@ void* worker(void* arg)
 
 int main(int argc, char** argv)
 {
-    if  (argc < 3)  
-    {   printf("usage: ./client <host ip> <eth id> [<connections> [<requests> [<buf_size>]]]\n");
+    if  (argc < 2)  
+    {   printf("usage: ./client <host ip> [<connections> [<requests> [<buf_size>]]]\n");
         return 0;
     }
 
@@ -69,16 +69,13 @@ int main(int argc, char** argv)
     that_addr.sin6_family = AF_INET6;
     that_addr.sin6_port = htons(port);
     if  (inet_pton(AF_INET6, argv[1], &that_addr.sin6_addr) != 0) perror("bad addrress");
-
-    if  (sscanf(argv[2], "%u", &that_addr.sin6_scope_id) != 0)  perror("bad eth id");
     
-    
-    if  (argc >= 4)  sscanf(argv[3], "%d", &conn_num);
+    if  (argc >= 3)  sscanf(argv[2], "%d", &conn_num);
     if  (conn_num > max_conn)  perror("too many connections");
 
-    if  (argc >= 5)  sscanf(argv[4], "%d", &request_num);
+    if  (argc >= 4)  sscanf(argv[3], "%d", &request_num);
     
-    if  (argc >= 6)  sscanf(argv[5], "%d", &buf_size);
+    if  (argc >= 5)  sscanf(argv[4], "%d", &buf_size);
 
 
 
