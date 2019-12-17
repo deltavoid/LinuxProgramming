@@ -10,7 +10,7 @@
 
 
 const int buf_size = 4096;
-const short port = 8000;
+const short port = 8192;
 
 
 
