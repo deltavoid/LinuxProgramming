@@ -10,9 +10,9 @@
 #include <netdb.h>
 
 
-const short port = 8000;
+const short port = 8192;
 struct sockaddr_in6 server_addr;
-int buf_size = 4096;
+int buf_size = 8;
 int request_num = 100;
 
 

@@ -54,7 +54,7 @@ int main(int argc, char** argv)
     // if  ((he = gethostbyname(argv[1])) == NULL)  perror("gethostbyname error");
     server_addr.sin_family = AF_INET;
     // server_addr.sin_addr = *((struct in_addr*)he->h_addr);
-    if  (inet_pton(AF_INET, argv[1], &server_addr.sin_addr.s_addr) != 0) perror("inet_pton error");
+    if  (inet_pton(AF_INET, argv[1], &server_addr.sin_addr.s_addr) <= 0) perror("inet_pton error");
     server_addr.sin_port = htons(port);
 
     if  (argc >= 3)  sscanf(argv[2], "%d", &request_num);
