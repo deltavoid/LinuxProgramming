@@ -26,6 +26,15 @@ ipv6
 https://blog.csdn.net/hepeng597/article/details/7803277
 
 
+ipv6 tcp connect invalid argument
+
+https://blog.csdn.net/liufuchun111/article/details/82349206
+
+https://blog.csdn.net/qq_34870631/article/details/80585632
+
+https://www.jianshu.com/p/389a8870a51d
+
+
 gethostbyname 
 
 https://www.cnblogs.com/cxz2009/archive/2010/11/19/1881611.html
