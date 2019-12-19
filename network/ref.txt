@@ -44,3 +44,8 @@ struct sockaddr;
 struct sockaddr_in;
 struct sockaddr_in6;
 
+
+
+getsockname 
+http://www.samirchen.com/get-client-server-ip-port/
+

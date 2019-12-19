@@ -11,7 +11,7 @@ run_server_epoll: server_epoll
 	./server_epoll
 
 run_client: client
-	./client 127.0.0.1
+	./client 192.168.1.2
 
 
 server: server.cpp util.h util.cpp
