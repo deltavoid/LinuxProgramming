@@ -48,6 +48,24 @@ void* worker(void* arg)
 }
 
 
+void checksockname_inet6(int fd)
+{
+    struct sockaddr_in6 that_addr;
+    const int addr_buf_size = 100;
+    char addr_buf[addr_buf_size];
+
+    int sin_size = sizeof(that_addr);
+    if (getsockname(fd, (struct sockaddr *)&that_addr, (socklen_t *)&sin_size) != 0)
+        perror("getsockname error");
+    printf("getsockname: %s:%d\n", inet_ntop(AF_INET6, &that_addr.sin6_addr, addr_buf, addr_buf_size),
+           ntohs(that_addr.sin6_port));
+
+    sin_size = sizeof(that_addr);
+    if (getpeername(fd, (struct sockaddr *)&that_addr, (socklen_t *)&sin_size) != 0)
+        perror("getpeername error");
+    printf("getpeername: %s:%d\n", inet_ntop(AF_INET6, &that_addr.sin6_addr, addr_buf, addr_buf_size),
+           ntohs(that_addr.sin6_port));
+}
 
 int main()
 {
@@ -78,7 +96,8 @@ int main()
         
         printf("%d's connection %d from %s:%d\n", sock_num, sock_fds[sock_num], 
                 inet_ntop(AF_INET6, &that_addr.sin6_addr, addr_buf, addr_buf_size), ntohs(that_addr.sin6_port));
-        
+        checksockname_inet6(sock_fds[sock_num]);
+
         if  (pthread_create(&sock_threads[sock_num], NULL, worker, (void*)&sock_fds[sock_num]) == -1)  
             perror("pthread error");
         
