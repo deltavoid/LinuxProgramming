@@ -14,3 +14,23 @@ https://wiki.archlinux.org/index.php/Kernel_module_(%E7%AE%80%E4%BD%93%E4%B8%AD%
 https://www.infoq.cn/article/linux-kernel-module-part01
 
 http://www.voidcn.com/article/p-grghdnxa-tb.html
+
+
+http://purecpp.org/detail?id=2084
+
+http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0142r0.pdf
+
+https://clang.llvm.org/docs/Modules.html
+
+https://www.modernescpp.com/index.php/c-20-modules
+
+https://docs.microsoft.com/en-us/cpp/cpp/modules-cpp?view=vs-2019
+
+
+https://vector-of-bool.github.io/2019/03/10/modules-1.html
+
+huxiu.com/article/286894.html
+
+https://www.csdn.net/article/2012-11-28/2812274-module-replace-C-based-languages-headers
+
+

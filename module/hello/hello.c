@@ -1,17 +1,24 @@
-//module hello
+
+
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/init.h>
 #include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/version.h>
 
 
 static int __init hello_init(void)
 {
-    printk(KERN_INFO "Hello World enter\n");
+    // printk(KERN_INFO "Hello World enter\n");
+    pr_info("hello inserted\n");
     return 0;
 }
 
 static void __exit hello_exit(void)
 {
-    printk(KERN_INFO "Hello World exit\n");
+    // printk(KERN_INFO "Hello World exit\n");
+    pr_info("hello removed\n");
 }
 
 
