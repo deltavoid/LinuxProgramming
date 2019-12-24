@@ -10,9 +10,9 @@
 #include <netdb.h>
 
 
-const short port = 8000;
+// const short port = 8000;
 struct sockaddr_in server_addr;
-int buf_size = 4096;
+int buf_size = 64;
 int request_num = 100;
 
 
@@ -56,28 +56,29 @@ void* client(void* arg)
 
 int main(int argc, char** argv)
 {
-    if  (argc < 2)  
-    {   printf("usage: ./client <host ip> [<requests> [<buf_size>]]\n");
+    if  (!(argc > 2))  
+    {   printf("usage: ./client <dst ip> <dst port> [<requests> [<buf_size>]]\n");
         return 0;
     }
 
-    struct hostent* he;   
-    if  ((he = gethostbyname(argv[1])) == NULL)  perror("gethostbyname error");
+    server_addr.sin_family = AF_INET;
 
-    if  (argc >= 3)  sscanf(argv[2], "%d", &request_num);
+    if  (inet_pton(AF_INET, argv[1], &server_addr.sin_addr) != 0)  perror("bad addr");
+    
+    int port_;
+    if  (sscanf(argv[2], "%d", &port_) == -1)  perror("bad port");
+    server_addr.sin_port = htons((short)port_);
 
-    if  (argc >= 4)  sscanf(argv[3], "%d", &buf_size);
+    if  (argc > 3)  sscanf(argv[3], "%d", &request_num);
+
+    if  (argc > 4)  sscanf(argv[4], "%d", &buf_size);
 
     
     int fd = -1;
     if  ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)  perror("socket error");
 
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr = *((struct in_addr*)he->h_addr);
-    server_addr.sin_port = htons(port);
-
     if  (connect(fd, (struct sockaddr*)&server_addr, sizeof(struct sockaddr)) == -1)  perror("connect error");
-
+    
     
     client(&fd);
 
