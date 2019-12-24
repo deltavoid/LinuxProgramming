@@ -1,0 +1,20 @@
+zqy@debian10:~/WorkSpace/module/hello$ make 
+
+make -C /lib/modules/4.19.0-6-amd64/build M=/home/zqy/WorkSpace/module/hello modules
+make[1]: Entering directory '/usr/src/linux-headers-4.19.0-6-amd64'
+  CC [M]  /home/zqy/WorkSpace/module/hello/hello.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+  CC      /home/zqy/WorkSpace/module/hello/hello.mod.o
+  LD [M]  /home/zqy/WorkSpace/module/hello/hello.ko
+make[1]: Leaving directory '/usr/src/linux-headers-4.19.0-6-amd64'
+
+
+sudo insmod ./hello.ko 
+
+lsmod 
+
+sudo rmmod hello
+
+sudo cat /var/log/syslog | grep Hello
+
