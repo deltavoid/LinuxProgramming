@@ -50,8 +50,12 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    struct hostent* he;   
-    if  ((he = gethostbyname(argv[1])) == NULL)  perror("gethostbyname error");
+    // struct hostent* he;   
+    // if  ((he = gethostbyname(argv[1])) == NULL)  perror("gethostbyname error");
+    server_addr.sin_family = AF_INET;
+    // server_addr.sin_addr = *((struct in_addr*)he->h_addr);
+    if  (inet_pton(AF_INET, argv[1], &server_addr.sin_addr.s_addr) <= 0) perror("inet_pton error");
+    server_addr.sin_port = htons(port);
 
     if  (argc >= 3)  sscanf(argv[2], "%d", &request_num);
 
@@ -61,9 +65,7 @@ int main(int argc, char** argv)
     int fd = -1;
     if  ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)  perror("socket error");
 
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr = *((struct in_addr*)he->h_addr);
-    server_addr.sin_port = htons(port);
+
 
     
     client(&fd);
