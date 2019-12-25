@@ -10,7 +10,6 @@
 
 
 const int buf_size = 4096;
-const short port = 8192;
 
 
 
@@ -45,16 +44,27 @@ void* udp_echo(void* arg)
 
 
 
-int main()
+int main(int argc, char** argv)
 {
-    int fd = -1;
-    if  ((fd = socket(AF_INET6, SOCK_DGRAM, 0)) == -1)  perror("socket error");
+    if  (!(argc > 1))
+    {   printf("usage: %s <port>\n", argv[0]);
+        return 0;
+    }
 
     struct sockaddr_in6 server_addr;
     memset(&server_addr, 0, sizeof(sockaddr_in6));
     server_addr.sin6_family = AF_INET6;
     server_addr.sin6_addr = in6addr_any;
-    server_addr.sin6_port = htons(port);
+
+    int port_;
+    if  (sscanf(argv[1], "%d", &port_) == -1)  perror("bad port");
+    server_addr.sin6_port = htons((short)port_);
+
+
+    int fd = -1;
+    if  ((fd = socket(AF_INET6, SOCK_DGRAM, 0)) == -1)  perror("socket error");
+
+
     // addr.sin6_family=AF_INET6;
 	// addr.sin6_port=htons(LOCALPORT);
 	// addr.sin6_addr=in6addr_any;
