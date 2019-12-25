@@ -1,17 +1,18 @@
 
+PORT := 8192
 
 .PHONY: run_server run_server_epoll run_client clean
 default: run_server_epoll
 
 
 run_server: server
-	./server
+	./server $(PORT)
 
 run_server_epoll: server_epoll
 	./server_epoll
 
 run_client: client
-	./client 192.168.1.2
+	./client 127.0.0.1 $(PORT)
 
 
 server: server.cpp util.h util.cpp

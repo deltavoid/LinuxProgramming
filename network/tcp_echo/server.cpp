@@ -63,17 +63,28 @@ void checksockname(int fd)
            ntohs(that_addr.sin_port));
 }
 
-int main()
+int main(int argc, char** argv)
 {
+    if  (!(argc > 1))
+    {   printf("usage: %s <port>\n", argv[0]);
+        return 0;
+    }
+
+    struct sockaddr_in this_addr;
+    this_addr.sin_family = AF_INET;
+    this_addr.sin_addr.s_addr = INADDR_ANY;
+    bzero(&(this_addr.sin_zero), sizeof(this_addr.sin_zero));
+
+    int port_;
+    if  (sscanf(argv[1], "%d", &port_) == -1)  perror("bad port");
+    this_addr.sin_port = htons((short)port_);
+
+
     int fd = -1;
     if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         perror("socket error");
 
-    struct sockaddr_in this_addr;
-    this_addr.sin_family = AF_INET;
-    this_addr.sin_port = htons(port);
-    this_addr.sin_addr.s_addr = INADDR_ANY;
-    bzero(&(this_addr.sin_zero), sizeof(this_addr.sin_zero));
+    
     if (bind(fd, (struct sockaddr *)&this_addr, sizeof(struct sockaddr)) == -1)
         perror("bind error");
 

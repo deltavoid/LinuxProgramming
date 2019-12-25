@@ -57,26 +57,29 @@ void* worker(void* arg)
 
 int main(int argc, char** argv)
 {
-    if  (argc < 2)  
-    {   printf("usage: ./client <host ip> [<connections> [<requests> [<buf_size>]]]\n");
+    if  (!(argc > 2))  
+    {   printf("usage: %s <dst ip> <dst ip> [<connections> [<requests> [<buf_size>]]]\n", argv[0]);
         return 0;
     }
 
-    struct hostent* he;   
-    if  ((he = gethostbyname(argv[1])) == NULL)  perror("gethostbyname error");
-    // if  ((he = gethostbyname(argv[1])) == NULL)  error("gethostbyname");
-    
-    if  (argc >= 3)  sscanf(argv[2], "%d", &conn_num);
-    if  (conn_num > max_conn)  perror("too many connections");
-
-    if  (argc >= 4)  sscanf(argv[3], "%d", &request_num);
-    
-    if  (argc >= 5)  sscanf(argv[4], "%d", &buf_size);
-
     struct sockaddr_in that_addr;
     that_addr.sin_family = AF_INET;
-    that_addr.sin_port = htons(port);
-    that_addr.sin_addr = *((struct in_addr*)he->h_addr);
+
+    if  (inet_pton(AF_INET, argv[1], &that_addr.sin_addr) == -1)  perror("bad addr");
+
+    int port_;
+    if  (sscanf(argv[2], "%d", &port_) == -1)  perror("bad port");
+    that_addr.sin_port = htons((short)port_);
+
+    
+    if  (argc > 3)  sscanf(argv[3], "%d", &conn_num);
+    if  (conn_num > max_conn)  perror("too many connections");
+
+    if  (argc > 4)  sscanf(argv[4], "%d", &request_num);
+    
+    if  (argc > 5)  sscanf(argv[5], "%d", &buf_size);
+
+
 
 
     for (int i = 0; i < conn_num; i++)
