@@ -34,11 +34,11 @@ void* worker(void* arg)
 
     while (true)
     {
-        size_t recv_len = recv(fd, buf, buf_size, 0);
-        if  (recv_len == 0)  break;
+        int recv_len = recv(fd, buf, buf_size, 0);
+        if  (recv_len <= 0)  break;
         printf("recv_len: %d\n", recv_len);
 
-        size_t send_len = send_full(fd, buf, recv_len, 0);
+        int send_len = send_full(fd, buf, recv_len, 0);
     }
 
 
@@ -67,16 +67,26 @@ void checksockname_inet6(int fd)
            ntohs(that_addr.sin6_port));
 }
 
-int main()
+int main(int argc, char** argv)
 {
-    int fd = -1;
-    if  ((fd = socket(AF_INET6, SOCK_STREAM, 0)) == -1)  perror("socket error");
+    if  (!(argc > 1))
+    {   printf("usage: %s <port>\n", argv[0]);
+        return 0;
+    }
 
     struct sockaddr_in6 this_addr;
     this_addr.sin6_family = AF_INET6;
-    this_addr.sin6_port = htons(port);
     this_addr.sin6_addr = in6addr_any;
-    // bzero(&(this_addr.sin_zero), sizeof(this_addr.sin_zero));
+
+    int port_;
+    if  (sscanf(argv[1], "%d", &port_) == -1)  perror("bad port");
+    this_addr.sin6_port = htons((short)port_);
+
+
+    int fd = -1;
+    if  ((fd = socket(AF_INET6, SOCK_STREAM, 0)) == -1)  perror("socket error");
+
+
     if  (bind(fd, (struct sockaddr*)&this_addr, sizeof(this_addr)) == -1)  perror("bind error");
 
     
