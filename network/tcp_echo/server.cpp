@@ -31,12 +31,12 @@ void *worker(void *arg)
 
     while (true)
     {
-        size_t recv_len = recv(fd, buf, buf_size, 0);
-        if (recv_len == 0)
+        int recv_len = recv(fd, buf, buf_size, 0);
+        if (recv_len <= 0)
             break;
         printf("recv_len: %d\n", recv_len);
 
-        size_t send_len = send_full(fd, buf, recv_len, 0);
+        int send_len = send_full(fd, buf, recv_len, 0);
     }
 
     close(fd);
@@ -104,7 +104,7 @@ int main(int argc, char** argv)
         printf("%d's connection %d from %s:%d\n", sock_num, sock_fds[sock_num],
                inet_ntoa(that_addr.sin_addr), ntohs(that_addr.sin_port));
         
-        checksockname(sock_fds[sock_num]);
+        // checksockname(sock_fds[sock_num]);
 
         if (pthread_create(&sock_threads[sock_num], NULL, worker, (void *)&sock_fds[sock_num]) == -1)
             perror("pthread error");
