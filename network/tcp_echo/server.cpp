@@ -104,7 +104,7 @@ int main(int argc, char** argv)
         printf("%d's connection %d from %s:%d\n", sock_num, sock_fds[sock_num],
                inet_ntoa(that_addr.sin_addr), ntohs(that_addr.sin_port));
         
-        // checksockname(sock_fds[sock_num]);
+        checksockname(sock_fds[sock_num]);
 
         if (pthread_create(&sock_threads[sock_num], NULL, worker, (void *)&sock_fds[sock_num]) == -1)
             perror("pthread error");
