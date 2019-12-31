@@ -55,12 +55,12 @@ void sockaddr_display(struct sockaddr_in6* addr)
     if  (addr->sin6_family == AF_INET)
     {
         struct sockaddr_in* sa = (struct sockaddr_in*)addr;
-        printf("ipv4: %s : %d\n", inet_ntop(AF_INET, &sa->sin_addr, addr_buf, addr_buf_size), ntohs(sa->sin_port));
+        printf("ipv4: %s:%d\n", inet_ntop(AF_INET, &sa->sin_addr, addr_buf, addr_buf_size), ntohs(sa->sin_port));
     }
     else if  (addr->sin6_family == AF_INET6)
     {
         struct sockaddr_in6* sa = (struct sockaddr_in6*)addr;
-        printf("ipv6: %s : %d\n", inet_ntop(AF_INET6, &sa->sin6_addr, addr_buf, addr_buf_size), ntohs(sa->sin6_port));
+        printf("ipv6: %s:%d\n", inet_ntop(AF_INET6, &sa->sin6_addr, addr_buf, addr_buf_size), ntohs(sa->sin6_port));
     }
     else
         printf("invaild sockaddr\n");
@@ -71,16 +71,18 @@ void checksockname(int fd)
     struct sockaddr_in6 addr;
 
     int sin_size = sizeof(addr);
-    if (getsockname(fd, (struct sockaddr *)&addr, (socklen_t *)&sin_size) != 0)
-        perror("getsockname error");
-    printf("getsockname: ");
-    sockaddr_display(&addr);
+    printf("getpeername: ");
+    if (getpeername(fd, (struct sockaddr *)&addr, (socklen_t *)&sin_size) == 0)
+        sockaddr_display(&addr);
+    else
+       printf("error\n");
 
     sin_size = sizeof(addr);
-    if (getpeername(fd, (struct sockaddr *)&addr, (socklen_t *)&sin_size) != 0)
-        perror("getpeername error");
-    printf("getpeername: ");
-    sockaddr_display(&addr);
+    printf("getsockname: ");
+    if (getsockname(fd, (struct sockaddr *)&addr, (socklen_t *)&sin_size) == 0)
+        sockaddr_display(&addr);
+    else
+        printf("error\n");
 }
 
 int main(int argc, char** argv)
