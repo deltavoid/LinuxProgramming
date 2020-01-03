@@ -10,18 +10,17 @@
 
 static int __init hello_init(void)
 {
-    // printk(KERN_INFO "Hello World enter\n");
     pr_info("hello inserted\n");
     return 0;
 }
 
 static void __exit hello_exit(void)
 {
-    // printk(KERN_INFO "Hello World exit\n");
     pr_info("hello removed\n");
+    pr_info("-------------------------------------------------\n");
 }
 
 
 module_init(hello_init);
 module_exit(hello_exit);
-MODULE_LICENSE("GPL v2");
+MODULE_LICENSE("GPL");
