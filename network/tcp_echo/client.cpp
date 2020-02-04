@@ -58,7 +58,7 @@ void* worker(void* arg)
 int main(int argc, char** argv)
 {
     if  (!(argc > 2))  
-    {   printf("usage: %s <dst ip> <dst ip> [<connections> [<requests> [<buf_size>]]]\n", argv[0]);
+    {   printf("usage: %s <dst ip> <dst port> [<connections> [<requests> [<buf_size>]]]\n", argv[0]);
         return 0;
     }
 
