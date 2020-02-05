@@ -41,10 +41,11 @@ void handle_accpet(int listen_fd, int epoll_fd)
 int handle_echo(int fd, char*buf)
 {
     int recv_len = recv(fd, buf, buf_size, 0);
-    printf("recv %d bytes on fd %d\n", recv_len, fd);
+    // printf("recv %d bytes on fd %d\n", recv_len, fd);
+    if  (recv_len <= 0)  return recv_len;
 
     int send_len = send(fd, buf, recv_len, 0);
-    return recv_len;
+    return send_len;
 }
 
 void close_fd(int fd, int epoll_fd)
@@ -122,7 +123,7 @@ int main(int argc, char** argv)
     }
 
     int port = 0;
-    if  (sscanf(argv[1], "%d", &port) != 0)  perror("bad port");
+    if  (sscanf(argv[1], "%d", &port) < 0)  perror("bad port");
     
     struct sockaddr_in this_addr;
     this_addr.sin_family = AF_INET;
