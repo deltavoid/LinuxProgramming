@@ -8,6 +8,8 @@
 #include <ctime>
 
 #include <vector>
+#include <set>
+#include <map>
 #include <memory>
 #include <thread>
 
@@ -48,6 +50,7 @@ class Tracer
     
     unsigned long long data[INDEX_MAX];
     struct timeval stamp;
+    // std::vector<unsigned long long>* latencies; 
 
     Tracer()
     {
@@ -77,11 +80,12 @@ class Tracer
             double speed = dt_val * 1000 * 1000 / dt_time;
             printf("%s: %.2lf\n", item_name[i], speed);
         }
-        printf("\n");
+        
 
         *old = *now;
     }
 };
+
 
 const char* Tracer::item_name[] = {
     "tx pkt/s",
@@ -90,6 +94,73 @@ const char* Tracer::item_name[] = {
     "rx byte/s",
 };
 
+class LatencyTracer
+{public:
+    // this must reverse enough space
+    static const int default_size = 204800;
+    ll* data;
+    ll num;
+
+    LatencyTracer()
+    {
+        refactor();
+    }
+
+    ~LatencyTracer()
+    {
+        delete data;
+    }
+
+    void refactor()
+    {
+        data = new ll[default_size];
+        num = 0;
+    }
+
+    void push(ll x)  {  data[num++] = x;}
+
+    double get_avg()
+    {
+        double sum = 0;
+        for (int i = 0; i < num; i++)
+            sum += data[i];
+        sum /= num;
+        return sum;
+    }
+
+    ll get_p99()
+    {
+        std::map<ll, ll> tails;
+        int tail_num = num / 100;
+        // printf("num: %d\n", num);
+        // printf("tail_num: %d\n", tail_num);
+
+        for (int i = 0; i < tail_num; i++)
+        {
+            tails[data[i]]++;
+
+            // printf("%d\n", data[i]);
+        }
+            
+        
+        for (int i = tail_num; i < num; i++)
+        {
+            tails[data[i]]++;
+
+            int remain = --tails.begin()->second;
+            if  (remain == 0)
+                tails.erase(tails.begin());
+        }
+
+        return tails.begin()->first;
+    }
+
+    void report()
+    {
+        printf("latency avg us: %lf\n", get_avg());
+        printf("latency p99 us: %lld\n", get_p99());
+    }
+};
 
 class Connection
 {public:
@@ -98,9 +169,10 @@ class Connection
     char* tx_buf;
     char* rx_buf;
     Tracer* tracer;
+    LatencyTracer* latency_tracer;
 
-    Connection(int fd, int pkt_size, char* tx_buf, char* rx_buf, Tracer* tracer)
-        : fd(fd), pkt_size(pkt_size), tx_buf(tx_buf), rx_buf(rx_buf), tracer(tracer)
+    Connection(int fd, int pkt_size, char* tx_buf, char* rx_buf, Tracer* tracer, LatencyTracer* latency_tracer)
+        : fd(fd), pkt_size(pkt_size), tx_buf(tx_buf), rx_buf(rx_buf), tracer(tracer), latency_tracer(latency_tracer)
     {
     }
 
@@ -111,6 +183,9 @@ class Connection
 
     void send()
     {
+        struct timeval* stamp = (struct timeval*)tx_buf;
+        gettimeofday(stamp, NULL);
+
         int sent = ::send_full(fd, tx_buf, pkt_size, 0);
         tracer->inc(tracer->TX_PKT);
         tracer->add(tracer->TX_BYTE, sent);
@@ -119,6 +194,18 @@ class Connection
     void recv()
     {
         int recd = ::recv(fd, rx_buf, pkt_size, 0);
+
+        if  (recd == pkt_size)
+        {   struct timeval now;
+            gettimeofday(&now, NULL);
+            struct timeval* old = (struct timeval*)rx_buf;
+            
+            ll rtt = (now.tv_usec - old->tv_usec) 
+                    + (now.tv_sec - old->tv_sec) * 1000 * 1000;
+            // printf("rtt: %lld\n", rtt);
+            latency_tracer->push(rtt);
+        }
+
         tracer->inc(tracer->RX_PKT);
         tracer->add(tracer->RX_BYTE, recd);
         // printf("fd %d recv %d bytes\n", fd, recd);
@@ -146,6 +233,7 @@ class EventLoop
     std::unique_ptr<std::thread> thread;
 
     Tracer tracer;
+    LatencyTracer latency_tracer;
 
     EventLoop(struct sockaddr* addr, int conn_num, int pkt_size)
         : events(conn_num), tx_buf(max_pkt_size), rx_buf(max_pkt_size)
@@ -166,7 +254,7 @@ class EventLoop
             if  (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event) < 0)  perror("epoll add error");
             
 
-            conns.push_back(std::make_unique<Connection>(fd, pkt_size, tx_buf.data(), rx_buf.data(), &tracer));
+            conns.push_back(std::make_unique<Connection>(fd, pkt_size, tx_buf.data(), rx_buf.data(), &tracer, &latency_tracer));
 
             printf("establish connection on fd %d\n", fd);
         }
@@ -247,8 +335,14 @@ int main(int argc, char** argv)
         
         Tracer now(loop.tracer);
         now.get_time();
-        
         Tracer::report(&now, &old);
+
+        LatencyTracer latency_tracer(loop.latency_tracer);
+        loop.latency_tracer.refactor();
+        // this is not thread safe
+        latency_tracer.report();
+
+        printf("\n");
     }
 
     loop.running = false;
