@@ -78,7 +78,7 @@ class Tracer
         {
             double dt_val = now->data[i] - old->data[i];
             double speed = dt_val * 1000 * 1000 / dt_time;
-            printf("%s: %.2lf\n", item_name[i], speed);
+            printf("%s: %.2lf  ", item_name[i], speed);
         }
         
 
@@ -157,8 +157,8 @@ class LatencyTracer
 
     void report()
     {
-        printf("latency avg us: %lf\n", get_avg());
-        printf("latency p99 us: %lld\n", get_p99());
+        printf("latency avg us: %lf  ", get_avg());
+        printf("latency p99 us: %lld  ", get_p99());
     }
 };
 
@@ -203,6 +203,7 @@ class Connection
             ll rtt = (now.tv_usec - old->tv_usec) 
                     + (now.tv_sec - old->tv_sec) * 1000 * 1000;
             // printf("rtt: %lld\n", rtt);
+            // be carefull of segment fault for array size not enough 
             latency_tracer->push(rtt);
         }
 
@@ -232,7 +233,7 @@ class EventLoop
     bool running;
     std::unique_ptr<std::thread> thread;
 
-    Tracer tracer;
+    Tracer tracer, old_tracer;
     LatencyTracer latency_tracer;
 
     EventLoop(struct sockaddr* addr, int conn_num, int pkt_size)
@@ -268,11 +269,12 @@ class EventLoop
 
     ~EventLoop()
     {
+        printf("enter dtor\n");
         thread->join();
         close(epfd);
     }
 
-
+    // work in this->thread
     void run()
     {
         while (running)
@@ -286,6 +288,20 @@ class EventLoop
                 conns[events[i].data.u32]->handle();
             }
         }
+    }
+
+    // work in main thread
+    void report()
+    {
+        Tracer now(this->tracer);
+        now.get_time();
+        Tracer::report(&now, &this->old_tracer);
+
+        LatencyTracer now_latency(this->latency_tracer);
+        this->latency_tracer.refactor();
+        now_latency.report();
+
+        printf("\n");
     }
 
 };
@@ -326,27 +342,47 @@ int main(int argc, char** argv)
 {
     if  (parse_arg(argc, argv) < 0)  return 0;
     
-    EventLoop loop((struct sockaddr*)&dst_addr, conn_num, pkt_size);
+    // EventLoop loop((struct sockaddr*)&dst_addr, conn_num, pkt_size);
 
-    Tracer old;
+    // Tracer old;
+    // for (int i = 0; i < duration; i++)
+    // {
+    //     sleep(1);
+        
+    //     Tracer now(loop.tracer);
+    //     now.get_time();
+    //     Tracer::report(&now, &old);
+
+    //     LatencyTracer latency_tracer(loop.latency_tracer);
+    //     loop.latency_tracer.refactor();
+    //     // this is not thread safe
+    //     latency_tracer.report();
+
+    //     printf("\n");
+    // }
+
+    // loop.running = false;
+    // // loop dtor
+
+    std::vector<std::unique_ptr<EventLoop>> loops;
+    for (int i = 0; i < thread_num; i++)
+    {
+        loops.push_back(std::make_unique<EventLoop>((struct sockaddr*)&dst_addr, conn_num, pkt_size));
+    }
+
     for (int i = 0; i < duration; i++)
     {
         sleep(1);
+
+        for (int j = 0; j < loops.size(); j++)
+            loops[j]->report();
         
-        Tracer now(loop.tracer);
-        now.get_time();
-        Tracer::report(&now, &old);
-
-        LatencyTracer latency_tracer(loop.latency_tracer);
-        loop.latency_tracer.refactor();
-        // this is not thread safe
-        latency_tracer.report();
-
         printf("\n");
     }
 
-    loop.running = false;
-    // loop dtor
+    for (int i = 0; i < loops.size(); i++)
+        loops[i]->running = false;
+    //dtor
 
     return 0;
 }

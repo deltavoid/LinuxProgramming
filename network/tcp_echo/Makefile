@@ -15,7 +15,7 @@ run_client: client
 	./client 127.0.0.1 $(PORT)
 
 run_client_epoll: client_epoll
-	./client_epoll 127.0.0.1 $(PORT) 1 4 64 100
+	./client_epoll 127.0.0.1 $(PORT) 4 1 64 100
 
 
 server: server.cpp util.h util.cpp
