@@ -36,6 +36,45 @@ int pkt_size = 64;
 int duration = 10;
 
 
+ll get_p99(std::map<ll, ll>* tails, ll tail_num)
+{
+    ll p99 = 0;
+    ll n = 0;
+    std::map<ll, ll>::reverse_iterator rit;
+    for (rit = tails->rbegin(); rit != tails->rend(); rit++)
+    {
+        n += rit->second;
+        if  (n >= tail_num)
+        {   p99 = rit->first;
+            break;
+        }
+    }
+
+    return p99;
+}
+
+class Total
+{public:
+    // Tracer::INDEX_MAX
+    double data[4];
+
+    double latencies;
+    ll num;
+    
+    std::map<ll, ll> tails;
+
+    Total()
+    {
+        memset(data, 0, sizeof(data));
+        latencies = 0;
+        num = 0;
+    }
+
+    ~Total() {}
+
+    void report();
+
+};
 
 class Tracer
 {public:
@@ -50,14 +89,12 @@ class Tracer
     
     unsigned long long data[INDEX_MAX];
     struct timeval stamp;
-    // std::vector<unsigned long long>* latencies; 
 
     Tracer()
     {
         memset(data, 0, sizeof(data));
         get_time();
     }
-
 
     ~Tracer() {}
 
@@ -66,8 +103,7 @@ class Tracer
     void inc(int idx)  {  data[idx]++;}
     void add(int idx, int val)  {  data[idx] += val;}
 
-
-    static void report(Tracer* now, Tracer* old)
+    static void report(Tracer* now, Tracer* old, Total* total)
     {
         double dt_time = now->stamp.tv_usec - old->stamp.tv_usec 
                 + (now->stamp.tv_sec - old->stamp.tv_sec) * 1000 * 1000;
@@ -78,14 +114,14 @@ class Tracer
         {
             double dt_val = now->data[i] - old->data[i];
             double speed = dt_val * 1000 * 1000 / dt_time;
+
+            total->data[i] += speed;
             printf("%s: %.2lf  ", item_name[i], speed);
         }
         
-
         *old = *now;
     }
 };
-
 
 const char* Tracer::item_name[] = {
     "tx pkt/s",
@@ -119,48 +155,50 @@ class LatencyTracer
 
     void push(ll x)  {  data[num++] = x;}
 
-    double get_avg()
+    double get_avg(Total* total)
     {
         double sum = 0;
         for (int i = 0; i < num; i++)
             sum += data[i];
+        
+        total->num += num;
+        total->latencies += sum;
+        
         sum /= num;
         return sum;
     }
 
-    ll get_p99()
+    ll get_p99(Total* total)
     {
         std::map<ll, ll> tails;
-        int tail_num = num / 100;
-        // printf("num: %d\n", num);
-        // printf("tail_num: %d\n", tail_num);
-
-        for (int i = 0; i < tail_num; i++)
-        {
-            tails[data[i]]++;
-
-            // printf("%d\n", data[i]);
-        }
-            
         
-        for (int i = tail_num; i < num; i++)
+        for (int i = 0; i < num; i++)
         {
             tails[data[i]]++;
-
-            int remain = --tails.begin()->second;
-            if  (remain == 0)
-                tails.erase(tails.begin());
+            total->tails[data[i]]++;
         }
 
-        return tails.begin()->first;
+        return ::get_p99(&tails, num / 100);
     }
 
-    void report()
+    void report(Total* total)
     {
-        printf("latency avg us: %lf  ", get_avg());
-        printf("latency p99 us: %lld  ", get_p99());
+        printf("latency avg us: %.2lf  ", get_avg(total));
+        printf("latency p99 us: %lld  ", get_p99(total));
     }
 };
+
+    void Total::report()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            printf("%s: %.2lf  ", Tracer::item_name[i], data[i]);
+        }
+
+        printf("latency avg us: %.2lf  ", latencies / num);
+        printf("latency p99 us: %lld\n", ::get_p99(&tails, num / 100));
+    }
+
 
 class Connection
 {public:
@@ -291,15 +329,16 @@ class EventLoop
     }
 
     // work in main thread
-    void report()
+    void report(Total* total)
     {
         Tracer now(this->tracer);
         now.get_time();
-        Tracer::report(&now, &this->old_tracer);
+        Tracer::report(&now, &this->old_tracer, total);
 
         LatencyTracer now_latency(this->latency_tracer);
         this->latency_tracer.refactor();
-        now_latency.report();
+        // this is not thread safe
+        now_latency.report(total);
 
         printf("\n");
     }
@@ -341,28 +380,6 @@ int parse_arg(int argc, char** argv)
 int main(int argc, char** argv)
 {
     if  (parse_arg(argc, argv) < 0)  return 0;
-    
-    // EventLoop loop((struct sockaddr*)&dst_addr, conn_num, pkt_size);
-
-    // Tracer old;
-    // for (int i = 0; i < duration; i++)
-    // {
-    //     sleep(1);
-        
-    //     Tracer now(loop.tracer);
-    //     now.get_time();
-    //     Tracer::report(&now, &old);
-
-    //     LatencyTracer latency_tracer(loop.latency_tracer);
-    //     loop.latency_tracer.refactor();
-    //     // this is not thread safe
-    //     latency_tracer.report();
-
-    //     printf("\n");
-    // }
-
-    // loop.running = false;
-    // // loop dtor
 
     std::vector<std::unique_ptr<EventLoop>> loops;
     for (int i = 0; i < thread_num; i++)
@@ -374,8 +391,15 @@ int main(int argc, char** argv)
     {
         sleep(1);
 
+        Total total;
         for (int j = 0; j < loops.size(); j++)
-            loops[j]->report();
+        {
+            printf("%2d: ", j);
+            loops[j]->report(&total);
+        }
+            
+        printf("all ");
+        total.report();
         
         printf("\n");
     }
