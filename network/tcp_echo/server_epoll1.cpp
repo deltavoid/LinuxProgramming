@@ -33,6 +33,7 @@ const int max_events = max_conn;
 const int max_pkt_size = 1024;
 
 int port = 0;
+int threads = 1;
 
 class Connection
 {public:
@@ -60,7 +61,6 @@ class Connection
         int send_len = send(fd, rx_buf, recv_len, 0);
         return send_len;
     }
-
 };
 
 class EventLoop
@@ -80,6 +80,7 @@ class EventLoop
     EventLoop()
         : events(max_events), tx_buf(max_pkt_size), rx_buf(max_pkt_size)
     {
+        printf("EventLoop ctor\n");
         if  ((epfd = epoll_create1(0)) < 0)  perror("epoll_create1 error");
 
         running = true;
@@ -113,10 +114,8 @@ class EventLoop
 
     void add_conn(std::unique_ptr<Connection> conn)
     {
-        // printf("add_conn\n");
         std::lock_guard<std::mutex> guard(buf_conns_mutex);
         buf_conns.push(std::move(conn));
-        // buf_conns.emplace(std::move(conn));
     }
 
     void dump_conn()
@@ -126,12 +125,10 @@ class EventLoop
         {
             std::unique_ptr<Connection> conn = std::move(buf_conns.front());
             buf_conns.pop();
-            // printf("conn: %d\n", conn->fd);
             
             struct epoll_event event;
             event.events = EPOLLIN;
             event.data.u32 = conns.size();
-            // printf("conns.size: %d\n", conns.size());
             if  (epoll_ctl(epfd, EPOLL_CTL_ADD, conn->fd, &event) < 0)  perror("epoll add error");
 
             conns.push_back(std::move(conn));
@@ -141,7 +138,6 @@ class EventLoop
     void rm_conn(std::unique_ptr<Connection> conn)
     {
         if  (epoll_ctl(epfd, EPOLL_CTL_DEL, conn->fd, NULL) < 0)  perror("epoll del error");
-
     }
 
 };
@@ -185,6 +181,12 @@ public:
     // run in single thread
     void accept()
     {
+        // for (int i = 0; i < 4; i++)
+        // {
+        //     printf("accept %d\n", i);
+        //     std::this_thread::sleep_for(std::chrono::seconds(1));
+        // }
+
         while (true)
         {
             struct sockaddr_in peer_addr;
@@ -193,22 +195,12 @@ public:
             if  (conn_fd < 0)  perror("accept error");
             // printf("accept: %d\n", conn_fd);
 
-            // close(conn_fd);
-
             int idx = conn_fd % loops->size();
             std::unique_ptr<Connection> conn = 
                     std::make_unique<Connection>(conn_fd, max_pkt_size, (*loops)[idx]->tx_buf.data(), (*loops)[idx]->rx_buf.data());
             
             (*loops)[idx]->add_conn(std::move(conn));
         }
-
-        // for (int i = 0; i < 4; i++)
-        // {
-        //     printf("accept %d\n", i);
-        //     std::this_thread::sleep_for(std::chrono::seconds(1));
-        // }
-            
-
     }
 };
 
@@ -217,12 +209,16 @@ int parse_arg(int argc, char **argv)
 {
     if (argc < 2)
     {
-        printf("usage: %s <port>\n", argv[0]);
+        printf("usage: %s <port> [<threads>]\n", argv[0]);
         return -1;
     }
 
     if (sscanf(argv[1], "%d", &port) < 0)
         perror("bad port");
+    
+    if  (argc > 2)
+        if  (sscanf(argv[2], "%d", &threads) < 0)  perror("bad threads");
+    printf("threads: %d\n", threads);
 
     return 1;
 }
@@ -235,7 +231,8 @@ int main(int argc, char **argv)
         return 0;
     
     std::vector<std::unique_ptr<EventLoop>> loops;
-    loops.push_back(std::make_unique<EventLoop>());
+    for (int i = 0; i < threads; i++)
+        loops.push_back(std::make_unique<EventLoop>());
 
 
     Acceptor acceptor(port, &loops);
@@ -244,6 +241,6 @@ int main(int argc, char **argv)
         
     for (int i = 0; i < loops.size(); i++)
         loops[i]->running = false;
-    printf("hello world\n");
+    // printf("hello world\n");
     return 0;
 }

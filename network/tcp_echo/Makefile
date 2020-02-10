@@ -12,13 +12,13 @@ run_server_epoll: server_epoll
 	./server_epoll $(PORT)
 
 run_server_epoll1: server_epoll1
-	./server_epoll1 $(PORT)
+	numactl --cpubind=0 --membind=0 ./server_epoll1 $(PORT) 2
 
 run_client: client
 	./client 127.0.0.1 $(PORT)
 
 run_client_epoll: client_epoll
-	./client_epoll 127.0.0.1 $(PORT) 4 1 64 10
+	numactl --cpubind=1 --membind=1 ./client_epoll 127.0.0.1 $(PORT) 1 4 64 1000
 
 
 server: server.cpp util.h util.cpp
