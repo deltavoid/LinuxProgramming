@@ -11,6 +11,9 @@ run_server: server
 run_server_epoll: server_epoll
 	./server_epoll $(PORT)
 
+run_server_epoll1: server_epoll1
+	./server_epoll1 $(PORT)
+
 run_client: client
 	./client 127.0.0.1 $(PORT)
 
@@ -22,6 +25,9 @@ server: server.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
 
 server_epoll: server_epoll.cpp util.h util.cpp
+	g++ -o $@ $^ -pthread
+
+server_epoll1: server_epoll1.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
 
 client: client.cpp util.h util.cpp
