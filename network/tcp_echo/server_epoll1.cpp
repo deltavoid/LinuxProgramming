@@ -50,6 +50,7 @@ class Connection
     ~Connection()
     {
         close(fd);
+        printf("fd %d is closed\n", fd);
     }
 
     int handle()
@@ -107,7 +108,7 @@ class EventLoop
             {
                 int idx = events[i].data.u32;
                 int ret = conns[idx]->handle();
-                if  (ret < 0)  rm_conn(std::move(conns[idx]));
+                if  (ret <= 0)  rm_conn(std::move(conns[idx]));
             }
         }
     }
@@ -193,7 +194,8 @@ public:
             int size = sizeof(peer_addr);
             int conn_fd =::accept(fd, (struct sockaddr*)&peer_addr, (socklen_t*)&size);
             if  (conn_fd < 0)  perror("accept error");
-            // printf("accept: %d\n", conn_fd);
+            printf("establish connection on fd %d form %s:%d\n", conn_fd, 
+                    inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port));
 
             int idx = conn_fd % loops->size();
             std::unique_ptr<Connection> conn = 
