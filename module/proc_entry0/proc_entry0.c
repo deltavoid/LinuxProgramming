@@ -19,13 +19,22 @@
 
 static int pet_entry_show(struct seq_file *seq, void *arg)
 {
+    int i;
+
+    pr_debug("pet_entry_show\n");
+    
     seq_puts(seq, "proc entry0 hello\n");
+
+    for (i = 0; i < 10; i++)
+        seq_puts(seq, "proc entry0 world\n");
 
     return 0;
 }
 
 static int pet_seq_open(struct inode *inode, struct file *file)
 {
+    pr_debug("pet_seq_open\n");
+
     return single_open(file, pet_entry_show, NULL);
 }
 
