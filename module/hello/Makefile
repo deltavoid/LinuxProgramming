@@ -2,7 +2,7 @@
 
 MODULE := hello
 obj-m += $(MODULE).o
-#CFLAGS_$(MODULE).o := -DDEBUG
+CFLAGS_$(MODULE).o := -DDEBUG
 KERNDIR	:= /lib/modules/$(shell uname -r)/build
 
 
