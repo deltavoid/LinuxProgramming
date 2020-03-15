@@ -1,35 +1,24 @@
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
-#include <sys/types.h>
 #include <errno.h>
-#include <sys/un.h>
+
+#include <unistd.h>
+#include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <sys/epoll.h>
+#include <sys/un.h>
+#include <netinet/in.h>
 #include <fcntl.h>
 
 #define UNIXSTR_PATH "server.socket"
 
 int main(int argc, char *argv[])
 {
-    int clifd, listenfd;
-    struct sockaddr_un servaddr, cliaddr;
+    int listenfd;
     int ret;
-    socklen_t clilen;
-    struct msghdr msg;
-    struct iovec iov[1];
-    char buf[100];
     char *testmsg = "test msg.\n";
-
-    union { //对齐
-        struct cmsghdr cm;
-        char control[CMSG_SPACE(sizeof(int))];
-    } control_un;
-    struct cmsghdr *pcmsg;
-    int recvfd;
 
     listenfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (listenfd < 0)
@@ -40,6 +29,7 @@ int main(int argc, char *argv[])
 
     unlink(UNIXSTR_PATH);
 
+    struct sockaddr_un servaddr;
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sun_family = AF_UNIX;
     strcpy(servaddr.sun_path, UNIXSTR_PATH);
@@ -56,13 +46,23 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-        clilen = sizeof(cliaddr);
-        clifd = accept(listenfd, (struct sockaddr *)&cliaddr, &clilen);
+        struct sockaddr_un cliaddr;
+        socklen_t clilen = clilen = sizeof(cliaddr);
+        int clifd = accept(listenfd, (struct sockaddr *)&cliaddr, &clilen);
         if (clifd < 0)
         {
             printf("accept failed.\n");
             continue;
         }
+
+        struct msghdr msg;
+        struct iovec iov[1];
+        char buf[100];
+        union { //对齐
+            struct cmsghdr cm;
+            char control[CMSG_SPACE(sizeof(int))];
+        } control_un;
+        struct cmsghdr *pcmsg;
 
         msg.msg_name = NULL;
         msg.msg_namelen = 0;
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
                 continue;
             }
             //这就是我们接收的描述符
-            recvfd = *((int *)CMSG_DATA(pcmsg));
+            int recvfd = *((int *)CMSG_DATA(pcmsg));
             printf("recv fd = %d\n", recvfd);
 
             write(recvfd, testmsg, strlen(testmsg) + 1);

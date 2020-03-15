@@ -1,15 +1,15 @@
-
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
-#include <sys/types.h>
 #include <errno.h>
-#include <sys/un.h>
+
+#include <unistd.h>
+#include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <sys/epoll.h>
+#include <sys/un.h>
+#include <netinet/in.h>
 #include <fcntl.h>
 
 #define UNIXSTR_PATH "server.socket"
@@ -17,18 +17,8 @@
 
 int main(int argc, char *argv[])
 {
-    int clifd;
-    struct sockaddr_un servaddr; //IPC
+    int clifd, fd;
     int ret;
-    struct msghdr msg;
-    struct iovec iov[1];
-    char buf[100];
-    union { //保证cmsghdr和msg_control对齐
-        struct cmsghdr cm;
-        char control[CMSG_SPACE(sizeof(int))];
-    } control_un;
-    struct cmsghdr *pcmsg;
-    int fd;
 
     clifd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (clifd < 0)
@@ -44,6 +34,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    struct sockaddr_un servaddr; //IPC
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sun_family = AF_UNIX;
     strcpy(servaddr.sun_path, UNIXSTR_PATH);
@@ -54,6 +45,17 @@ int main(int argc, char *argv[])
         printf("connect failed.\n");
         return 0;
     }
+
+    struct msghdr msg;
+    struct iovec iov[1];
+    char buf[100];
+
+    union { //保证cmsghdr和msg_control对齐
+        struct cmsghdr cm;
+        char control[CMSG_SPACE(sizeof(int))];
+    } control_un;
+    struct cmsghdr *pcmsg;
+
     //udp需要,tcp无视
     msg.msg_name = NULL;
     msg.msg_namelen = 0;
