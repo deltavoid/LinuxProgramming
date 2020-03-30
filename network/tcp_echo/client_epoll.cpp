@@ -132,14 +132,18 @@ const char* Tracer::item_name[] = {
 
 class LatencyTracer
 {public:
-    // this must reverse enough space
-    static const int default_size = 204800;
+    // this should reverse enough space
+    static const int bits = 18;
+    static const int size = 1 << bits;
+    static const int mask = size - 1;
+
     ll* data;
-    ll num;
+    ll f, p;
 
     LatencyTracer()
     {
-        refactor();
+        data = new ll[size];
+        f = p = 0;
     }
 
     ~LatencyTracer()
@@ -147,44 +151,38 @@ class LatencyTracer
         delete data;
     }
 
-    void refactor()
-    {
-        data = new ll[default_size];
-        num = 0;
-    }
+    void push(ll x)  {  data[p++ & mask] = x;}
 
-    void push(ll x)  {  data[num++] = x;}
 
-    double get_avg(Total* total)
-    {
-        double sum = 0;
-        for (int i = 0; i < num; i++)
-            sum += data[i];
-        
-        total->num += num;
-        total->latencies += sum;
-        
-        sum /= num;
-        return sum;
-    }
-
-    ll get_p99(Total* total)
-    {
-        std::map<ll, ll> tails;
-        
-        for (int i = 0; i < num; i++)
-        {
-            tails[data[i]]++;
-            total->tails[data[i]]++;
-        }
-
-        return ::get_p99(&tails, num / 100);
-    }
-
+    //call in another thread
     void report(Total* total)
     {
-        printf("latency avg us: %.2lf  ", get_avg(total));
-        printf("latency p99 us: %lld  ", get_p99(total));
+        double sum = 0;
+        ll num = 0;
+        std::map<ll, ll> tails;
+
+        const ll buf_bits = 8;
+        const ll buf_size = 1 << buf_bits;
+
+        while ((p >> buf_bits) - (f >> buf_bits) > 0)
+        {
+            for (ll i = 0; i < buf_size; i++)
+            {
+                ll x = data[f++ & mask];
+
+                sum += x;
+                num++;
+                tails[x]++;
+                total->tails[x]++;
+            }
+        }
+
+        total->num += num;
+        total->latencies += sum;
+
+        // printf("latency num: %lld\n", num);
+        printf("latency avg us: %.2lf  ", sum / num);
+        printf("latency p99 us: %lld  ", ::get_p99(&tails, num / 100));
     }
 };
 
@@ -335,10 +333,7 @@ class EventLoop
         now.get_time();
         Tracer::report(&now, &this->old_tracer, total);
 
-        LatencyTracer now_latency(this->latency_tracer);
-        this->latency_tracer.refactor();
-        // this is not thread safe
-        now_latency.report(total);
+        this->latency_tracer.report(total);
 
         printf("\n");
     }

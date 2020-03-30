@@ -17,7 +17,7 @@ static int __init hello_init(void)
 static void __exit hello_exit(void)
 {
     pr_info("hello removed\n");
-    pr_info("-------------------------------------------------\n");
+    pr_debug("-------------------------------------------------\n");
 }
 
 
