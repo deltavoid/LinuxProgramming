@@ -49,3 +49,18 @@ struct sockaddr_in6;
 getsockname 
 http://www.samirchen.com/get-client-server-ip-port/
 
+
+
+
+
+epoll
+
+网络编程中的SO_REUSEADDR和SO_REUSEPORT参数详解
+https://zhuanlan.zhihu.com/p/35367402
+
+
+什么是惊群，如何有效避免惊群?
+https://www.zhihu.com/question/22756773
+
+accept 与 epoll 惊群
+https://pureage.info/2015/12/22/thundering-herd.html
