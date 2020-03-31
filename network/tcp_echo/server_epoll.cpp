@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <fcntl.h>
 
 #include "util.h"
 
@@ -28,8 +29,12 @@ void handle_accpet(int listen_fd, int epoll_fd)
     struct sockaddr_in that_addr;
     int sin_size = sizeof(struct sockaddr_in);
     int fd = -1;
-    if  ((fd = accept(listen_fd, (struct sockaddr*)&that_addr, (socklen_t*)&sin_size)) == -1)  perror("accept error");
-    printf("establish connection on fd %d form %s:%d\n", fd, inet_ntoa(that_addr.sin_addr), ntohs(that_addr.sin_port));
+    if  ((fd = accept4(listen_fd, (struct sockaddr*)&that_addr, (socklen_t*)&sin_size, SOCK_NONBLOCK)) == -1)  
+    {   perror("accept error");
+        return;
+    }
+    printf("establish connection on fd %d form %s:%d\n", fd, inet_ntoa(that_addr.sin_addr), 
+            ntohs(that_addr.sin_port));
 
     struct epoll_event event;
     event.events = EPOLLIN;
@@ -134,6 +139,8 @@ int main(int argc, char** argv)
 
     int fd = -1;
     if  ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)  perror("socket error");
+
+    if  (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK) < 0) perror("fcntl error");  
 
 
     if  (bind(fd, (struct sockaddr*)&this_addr, sizeof(struct sockaddr)) == -1)  perror("bind error");
