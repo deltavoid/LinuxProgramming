@@ -14,6 +14,9 @@ run_server_epoll: server_epoll
 run_server_epoll1: server_epoll1
 	numactl --cpubind=0 --membind=0 ./server_epoll1 $(PORT) 2
 
+run_server_epoll_reuseport: server_epoll_reuseport
+	./server_epoll_reuseport $(PORT) 2
+
 run_client: client
 	./client 127.0.0.1 $(PORT)
 
@@ -28,6 +31,9 @@ server_epoll: server_epoll.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
 
 server_epoll1: server_epoll1.cpp util.h util.cpp
+	g++ -o $@ $^ -pthread
+
+server_epoll_reuseport: server_epoll_reuseport.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
 
 client: client.cpp util.h util.cpp

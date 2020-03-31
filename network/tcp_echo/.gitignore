@@ -5,3 +5,4 @@ server
 server_epoll
 client_epoll
 server_epoll1
+server_epoll_reuseport
