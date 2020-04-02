@@ -55,6 +55,15 @@ http://www.samirchen.com/get-client-server-ip-port/
 
 epoll
 
+
+
+https://github.com/yedf/handy/blob/master/raw-examples/epoll.cc
+
+
+https://github.com/yedf/handy/blob/master/raw-examples/epoll-et.cc
+
+
+
 网络编程中的SO_REUSEADDR和SO_REUSEPORT参数详解
 https://zhuanlan.zhihu.com/p/35367402
 

@@ -11,8 +11,8 @@ run_server: server
 run_server_epoll: server_epoll
 	./server_epoll $(PORT)
 
-run_server_epoll1: server_epoll1
-	numactl --cpubind=0 --membind=0 ./server_epoll1 $(PORT) 2
+run_server_epoll_bench: server_epoll_bench
+	numactl --cpubind=0 --membind=0 ./server_epoll_bench $(PORT) 2
 
 run_server_epoll_reuseport: server_epoll_reuseport
 	./server_epoll_reuseport $(PORT) 2
@@ -20,8 +20,8 @@ run_server_epoll_reuseport: server_epoll_reuseport
 run_client: client
 	./client 127.0.0.1 $(PORT)
 
-run_client_epoll: client_epoll
-	numactl --cpubind=1 --membind=1 ./client_epoll 127.0.0.1 $(PORT) 1 4 64 1000
+run_client_epoll_bench: client_epoll_bench
+	numactl --cpubind=1 --membind=1 ./client_epoll_bench 127.0.0.1 $(PORT) 1 4 64 1000
 
 
 server: server.cpp util.h util.cpp
@@ -30,7 +30,7 @@ server: server.cpp util.h util.cpp
 server_epoll: server_epoll.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
 
-server_epoll1: server_epoll1.cpp util.h util.cpp
+server_epoll_bench: server_epoll_bench.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
 
 server_epoll_reuseport: server_epoll_reuseport.cpp util.h util.cpp
@@ -39,8 +39,8 @@ server_epoll_reuseport: server_epoll_reuseport.cpp util.h util.cpp
 client: client.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
 
-client_epoll: client_epoll.cpp util.h util.cpp
+client_epoll_bench: client_epoll_bench.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
 
 clean:
-	-rm client client_epoll server server_epoll server_epoll1 
+	-rm client client_epoll_bench server server_epoll server_epoll_bench

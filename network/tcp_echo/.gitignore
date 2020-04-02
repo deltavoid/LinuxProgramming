@@ -3,6 +3,6 @@
 client
 server
 server_epoll
-client_epoll
-server_epoll1
+client_epoll_bench
+server_epoll_bench
 server_epoll_reuseport

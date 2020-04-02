@@ -6,7 +6,7 @@ thread应用
 
 client.cpp: one connection per thread
 
-client_epoll.cpp: one loop per thread, multi_thread,  epoll, tracer, benchmark client
+client_epoll_bench.cpp: one loop per thread, multi_thread,  epoll, tracer, benchmark client
 
 
 
@@ -14,10 +14,95 @@ server.cpp: one connection per thread
 
 server_epoll.cpp: one_loop_per_thread, single_thread, epoll, level_trigger, EPOLLIN, nonblocking, 
 
-server_epoll1.cpp: one_loop_per_thread, multi_thread, accept_on_single_thread,  epoll, level_trigger, EPOLLIN, benchmark server
+server_epoll_bench.cpp: one_loop_per_thread, multi_thread, accept_on_single_thread,  epoll, level_trigger, EPOLLIN, benchmark server
 
 server_epoll_reuseport.cpp: one_loop_per_thread, multi_thread, SO_REUSEPORT, epoll, level_trigger, EPOLLIN, nonblocking,  
 
 server_epollout.cpp: one_loop_per_thread, single_thread, epoll, level_trigger, EPOLLIN, EPOLLOUT, nonblocking, 
 
 server_epoll_et.cpp: one_loop_per_thread, single_thread, epoll, edge_trigger, EPOLLIN, nonblocking, 
+
+
+
+
+epollout, level_trigger // not completed
+
+    need_send, enable_send, enable_epoll(LT, ET needn't)
+
+    class send_buffer{
+        buffer;
+
+        write_buffer(){
+            move_data_to_buffer();
+            set(need_send);
+            send();
+        }
+
+        send(){
+            if  (need_send)
+            {   if  (enable_send)
+                {   while (send(...) > 0);
+                    if  (send_over)     
+                        goto noneed_send;
+                    
+                    if  (EAGAIN) clear(enable_send);
+                }
+
+                if  (!enable_epoll)
+                    set(enable_epoll);
+                return ;        
+            }
+
+noneed_send:
+            clear(need_send);
+            if  (enable_epoll)
+                clear(enable_epoll);
+        }
+
+        handle_write(){
+            set(enable_send);
+            send();
+        }
+
+
+
+
+epoll_out, edge_trigger
+
+    need_send, enable_send, 
+
+class buffer
+{
+    buffer;
+
+    write_buffer()
+    {
+        move_data_to_buffer();
+        set(need_send);
+        send();
+    }
+
+    send()
+    {
+        if  (need_send)
+        {
+            if  (enable_send)
+            {
+                while (::send(...) > 0);
+
+                if  (send_over)
+                {   clear(need_send);
+                    return;
+                }
+
+                if  (EAGAIN)  clear(enable_send);
+            }
+        }
+    }
+
+    handle_write()
+    {
+        set(enable_send);
+        send();
+    }
+};

@@ -192,7 +192,7 @@ public:
         {
             struct sockaddr_in peer_addr;
             int size = sizeof(peer_addr);
-            int conn_fd =::accept(fd, (struct sockaddr*)&peer_addr, (socklen_t*)&size);
+            int conn_fd =::accept4(fd, (struct sockaddr*)&peer_addr, (socklen_t*)&size, SOCK_NONBLOCK);
             if  (conn_fd < 0)  perror("accept error");
             printf("establish connection on fd %d form %s:%d\n", conn_fd, 
                     inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port));
