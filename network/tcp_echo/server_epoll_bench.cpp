@@ -106,9 +106,15 @@ class EventLoop
 
             for (int i = 0; i < num; i++)
             {
+                uint32_t event = events[i].events;
                 int idx = events[i].data.u32;
-                int ret = conns[idx]->handle();
-                if  (ret <= 0)  rm_conn(std::move(conns[idx]));
+
+                if  (event | EPOLLIN)
+                {   int ret = conns[idx]->handle();
+                    if  (ret <= 0)  rm_conn(std::move(conns[idx]));
+                }
+                else if  (event | EPOLLERR)
+                    rm_conn(std::move(conns[idx]));
             }
         }
     }
