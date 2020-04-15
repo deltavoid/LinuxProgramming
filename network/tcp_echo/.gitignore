@@ -1,8 +1,13 @@
 
 
 client
+client_epoll_bench
+client_test_epollout
+
 server
 server_epoll
-client_epoll_bench
 server_epoll_bench
 server_epoll_reuseport
+server_epoll_et
+server_epoll_et_ref
+server_epollout_ref
