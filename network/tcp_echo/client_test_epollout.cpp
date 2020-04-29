@@ -41,13 +41,13 @@ int main(int argc, char** argv)
     if  (ret < 0)  perror("connect error");
 
 
-    while (true)
+    // while (true)
     {
-        scanf("%s", read_buf);
-        int len = strlen(read_buf);
+        // scanf("%s", read_buf);
+        // int len = strlen(read_buf);
 
-        int send_len = send_full(fd, read_buf, len, 0);
-        printf("msg %s sent.\n", read_buf);
+        // int send_len = send_full(fd, read_buf, len, 0);
+        // printf("msg %s sent.\n", read_buf);
 
 
         int64_t recv_len = recv(fd, recv_buf, buf_size, 0);
