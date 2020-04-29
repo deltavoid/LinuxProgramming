@@ -26,6 +26,9 @@ run_server_epoll_et_ref: server_epoll_et_ref
 run_server_epoll_et: server_epoll_et
 	./$< $(PORT)
 
+run_server_epollout: server_epollout
+	./$< $(PORT)
+
 run_client: client
 	./client 127.0.0.1 $(PORT)
 
@@ -55,6 +58,9 @@ server_epoll_et_ref: server_epoll_et_ref.cpp
 	g++ -o $@ $^ -pthread
 
 server_epoll_et: server_epoll_et.cpp
+	g++ -o $@ $^ -pthread
+
+server_epollout: server_epollout.cpp
 	g++ -o $@ $^ -pthread
 
 

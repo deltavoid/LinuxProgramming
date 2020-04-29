@@ -32,18 +32,31 @@ class Connection
 {
 public:
     int fd;
+    int epoll_fd;
     // char buf[buf_size];
     // int reponse_num;
     int recv_len;
     int send_len;
+    bool enable_epollout;
     static int send_cnt;
 
-    Connection(int fd) : fd(fd), recv_len(0)
+    Connection(int fd, int epoll_fd) : fd(fd), epoll_fd(epoll_fd), recv_len(0)
     {
+        enable_epollout = false;
         send_len = 0;
         send_buf();
     }
     ~Connection() {}
+
+    void set_epollout(bool flag)
+    {
+        struct epoll_event event;
+        event.events = EPOLLIN | (flag? EPOLLOUT : 0);
+        event.data.fd = fd;
+        if  (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event) < 0)
+            perror("epoll_ctl error");
+        enable_epollout = flag;
+    }
 
     int send_buf()
     {
@@ -54,10 +67,18 @@ public:
         }
 
         if (send_len == reponse_size)
+        {
+            if  (enable_epollout)
+                set_epollout(false);
             return 1;
-
+        }
+            
         if (tmp < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+        {
+            if  (!enable_epollout)
+                set_epollout(true);
             return 0;
+        }
 
         // if (tmp < 0)
         { // handle error
@@ -145,12 +166,12 @@ void handle_accpet(int listen_fd, int epoll_fd, ConnectionMap &conns)
            ntohs(that_addr.sin_port));
 
     struct epoll_event event;
-    event.events = EPOLLIN | EPOLLOUT | EPOLLET;
+    event.events = EPOLLIN;
     event.data.fd = fd;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)
         perror("epoll_ctl add error");
 
-    Connection *conn = new Connection(fd);
+    Connection *conn = new Connection(fd, epoll_fd);
     conns.insert(std::make_pair(fd, conn));
 }
 
