@@ -34,50 +34,65 @@ server_epoll_et.cpp: one_loop_per_thread, single_thread, epoll, edge_trigger, EP
 epollout, level_trigger // not completed
 
     need_send, enable_send, enable_epoll(LT, ET needn't)
+    enable_send use send's return value
 
-    class send_buffer{
-        buffer;
+class Connection
+{
+    buffer;
+    enable_epollout;
 
-        write_buffer(){
-            move_data_to_buffer();
-            set(need_send);
-            send();
+    write_buffer()
+    {
+        move_data_to_buffer();
+        set(need_send);
+        send_buf();
+    }
+
+    set_epollout(flag)
+    {
+        epoll_ctl(...);
+        enable_epollout = flag;
+    }
+
+    // this function has two entries, the user and epollout.
+    send_buf()
+    {
+        while ((send_len < need_send) && (tmp = ::send(...)) > 0)
+        {   send_len += tmp;
         }
 
-        send(){
-            if  (need_send)
-            {   if  (enable_send)
-                {   while (send(...) > 0);
-                    if  (send_over)     
-                        goto noneed_send;
-                    
-                    if  (EAGAIN) clear(enable_send);
-                }
-
-                if  (!enable_epoll)
-                    set(enable_epoll);
-                return ;        
-            }
-
-noneed_send:
-            clear(need_send);
-            if  (enable_epoll)
-                clear(enable_epoll);
+        if  (send_len == need_send)
+        {   // send completed.
+            if  (enable_epollout)
+                set_epollout(false);
+            return 1;
         }
 
-        handle_write(){
-            set(enable_send);
-            send();
+        if  (tmp < 0 && ((errno == EAGAIN || errno == EWOULDBLOCK))
+        {   // EAGAIN
+            if  (!enable_epollout)
+                set_epollout(ture);
+            return 0;
         }
 
+        return -1;
+    }
+
+    handle_write()
+    {
+        send_buf();
+    }
+
+};
 
 
 
 epoll_out, edge_trigger
 
     need_send, enable_send, 
+    enable_send use send's return value
 
-class buffer
+class Connection
 {
     buffer;
 
@@ -85,30 +100,31 @@ class buffer
     {
         move_data_to_buffer();
         set(need_send);
-        send();
+        send_buf();
     }
 
-    send()
+    // this function has two entries, the user and epollout.
+    send_buf()
     {
-        if  (need_send)
-        {
-            if  (enable_send)
-            {
-                while (::send(...) > 0);
-
-                if  (send_over)
-                {   clear(need_send);
-                    return;
-                }
-
-                if  (EAGAIN)  clear(enable_send);
-            }
+        while ((send_len < need_send) && (tmp = ::send(...)) > 0)
+        {   send_len += tmp;
         }
+
+        if  (send_len == need_send)
+        {   // send completed.
+            return 1;
+        }
+
+        if  (tmp < 0 && ((errno == EAGAIN || errno == EWOULDBLOCK))
+        {   // EAGAIN
+            return 0;
+        }
+
+        return -1;
     }
 
     handle_write()
     {
-        set(enable_send);
-        send();
+        send_buf();
     }
 };

@@ -58,6 +58,7 @@ public:
         enable_epollout = flag;
     }
 
+    // this function has two entries, the user and epollout.
     int send_buf()
     {
         int tmp = 0;
