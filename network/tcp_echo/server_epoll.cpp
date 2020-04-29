@@ -148,28 +148,6 @@ int main(int argc, char** argv)
 
     loop(&fd);
 
-    
-    // if  (listen(fd, backlog) == -1)  perror("listen error");
-
-    // while (true)
-    // {
-    //     struct sockaddr_in that_addr;
-    //     int sin_size = sizeof(struct sockaddr_in);
-        
-
-
-    //     if  ((sock_fds[sock_num] = accept(fd, (struct sockaddr*)&that_addr, (socklen_t*)&sin_size)) == -1)  
-    //         perror("accept error");
-        
-    //     printf("%d's connection %d from %s:%d\n", sock_num, sock_fds[sock_num], 
-    //             inet_ntoa(that_addr.sin_addr), ntohs(that_addr.sin_port));
-        
-    //     if  (pthread_create(&sock_threads[sock_num], NULL, worker, (void*)&sock_fds[sock_num]) == -1)  
-    //         perror("pthread error");
-        
-    //     sock_num++;
-    //     if  (sock_num >= max_conns)  perror("too many connections");
-    // }
 
 
     return 0;
