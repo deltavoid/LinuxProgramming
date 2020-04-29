@@ -8,6 +8,7 @@ server
 server_epoll
 server_epoll_bench
 server_epoll_reuseport
+server_epoll_handle
 server_epoll_et
 server_epoll_et_ref
 server_epollout_ref

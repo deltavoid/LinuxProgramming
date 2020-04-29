@@ -17,6 +17,9 @@ run_server_epoll_bench: server_epoll_bench
 run_server_epoll_reuseport: server_epoll_reuseport
 	./server_epoll_reuseport $(PORT) 2
 
+run_server_epoll_handle: server_epoll_handle
+	./$< $(PORT)
+
 run_server_epoll_et_ref: server_epoll_et_ref
 	./$< 
 
@@ -43,6 +46,9 @@ server_epoll_bench: server_epoll_bench.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
 
 server_epoll_reuseport: server_epoll_reuseport.cpp util.h util.cpp
+	g++ -o $@ $^ -pthread
+
+server_epoll_handle: server_epoll_handle.cpp
 	g++ -o $@ $^ -pthread
 
 server_epoll_et_ref: server_epoll_et_ref.cpp
