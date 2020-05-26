@@ -147,6 +147,7 @@ void* loop(void* arg)
             else
             {            
                 // use int handle(void* data, uint32_t events) as interface between epoll and concret handler, e.g. connection.
+                // put epoll_ctl_del(...) to Connection is a choice worth consideration.
                 struct EpollHandler* epoll_handler = (struct EpollHandler*)data;
 
                 if  (epoll_handler->handle(evs) < 0)
