@@ -92,7 +92,7 @@ class Connection : public EpollHandler
 // typedef std::unordered_map<int, Connection*> ConnectionMap;
 // ConnectionMap conns;
 
-void handle_accpet(int listen_fd, int epoll_fd, char* buf)
+void handle_accept(int listen_fd, int epoll_fd, char* buf)
 {
     struct sockaddr_in that_addr;
     int sin_size = sizeof(struct sockaddr_in);
@@ -164,7 +164,7 @@ void* loop(void* arg)
             // if  (fd == listen_fd)
             if  (data == NULL)
             {
-                handle_accpet(listen_fd, epoll_fd, echo_buf);
+                handle_accept(listen_fd, epoll_fd, echo_buf);
             }
             else
             {

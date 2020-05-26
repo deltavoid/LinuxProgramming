@@ -25,7 +25,7 @@ const int buf_size = 4096;
 const int backlog = 10;
 const int max_events = 4096;
 
-void handle_accpet(int listen_fd, int epoll_fd)
+void handle_accept(int listen_fd, int epoll_fd)
 {
     struct sockaddr_in that_addr;
     int sin_size = sizeof(struct sockaddr_in);
@@ -102,7 +102,7 @@ void *loop(void *arg)
             if (event.events | EPOLLIN)
             {
                 if (event.data.fd == listen_fd)
-                    handle_accpet(listen_fd, epoll_fd);
+                    handle_accept(listen_fd, epoll_fd);
                 else
                 {
                     if (handle_echo(event.data.fd, echo_buf) <= 0)

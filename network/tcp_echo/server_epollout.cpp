@@ -154,7 +154,7 @@ int Connection::send_cnt = 0;
 typedef std::unordered_map<int, Connection *> ConnectionMap;
 ConnectionMap conns;
 
-void handle_accpet(int listen_fd, int epoll_fd, ConnectionMap &conns)
+void handle_accept(int listen_fd, int epoll_fd, ConnectionMap &conns)
 {
     struct sockaddr_in that_addr;
     int sin_size = sizeof(struct sockaddr_in);
@@ -226,7 +226,7 @@ void *loop(void *arg)
 
             if (fd == listen_fd)
             {
-                handle_accpet(listen_fd, epoll_fd, conns);
+                handle_accept(listen_fd, epoll_fd, conns);
             }
             else
             {
