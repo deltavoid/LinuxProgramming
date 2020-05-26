@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// #include <unordered_map>
-
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -17,56 +15,11 @@
 #include <pthread.h>
 #include <fcntl.h>
 
-// #include "util.h"
 
-
-// const int buf_size = 4096;
-// const int backlog = 10;
-// const int max_events = 4096;
 #define buf_size 4096
 #define backlog 10
 #define max_events 4096
 
-
-
-// class Connection
-// {public:
-//     int fd;
-//     // char buf[buf_size];
-
-//     Connection(int fd) : fd(fd) {}
-//     ~Connection() {}
-
-
-//     // this has not failure tolerrance
-//     int handle_echo(char* buf)
-//     {
-//         int recv_len = recv(fd, buf, buf_size, 0);
-//         // printf("recv %d bytes on fd %d\n", recv_len, fd);
-//         if  (recv_len <= 0)  return recv_len;
-
-//         int send_len = send(fd, buf, recv_len, 0);
-//         return send_len;
-//     }
-
-//     int handle(int events, char* buf)
-//     {
-//         int ret = 0;
-
-//         if  (events & EPOLLIN)
-//         {
-//             if  (handle_echo(buf) <= 0)
-//                 ret = -1; 
-//         }
-//         else
-//             ret = -1;
-
-//         return ret;
-//     }
-// };
-
-// typedef std::unordered_map<int, Connection*> ConnectionMap;
-// ConnectionMap conns;
 
 
 typedef int (*epoll_handler_t)(void* data, uint32_t events);
@@ -89,9 +42,9 @@ inline void epoll_destruct(void* data)
 }
 
 
+
 struct Connection
 {
-    // epoll_handler_t handler;
     EpollHandler epoll_handler;
     char* buf;
     int fd;
@@ -112,6 +65,7 @@ int connection_echo(struct Connection* conn)
 
 }
 
+// this is the main interface for epoll users.
 int connection_handler(void* data, uint32_t events)
 {
     struct Connection* conn = (struct Connection*)data;
@@ -144,7 +98,6 @@ void connection_destructor(void* data)
 
     printf("connection_destructor: fd %d is closed\n", fd);
 }
-
 
 struct Connection* connection_constructor(int fd, int epoll_fd, char* buf)
 {
@@ -181,53 +134,10 @@ void handle_accept(int listen_fd, int epoll_fd,  char* buf)
     printf("establish connection on fd %d form %s:%d\n", fd, inet_ntoa(that_addr.sin_addr), 
             ntohs(that_addr.sin_port));
 
-    // struct epoll_event event;
-    // event.events = EPOLLIN;
-    // event.data.fd = fd;
-    // if  (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)  perror("epoll_ctl add error");
-
-    // Connection* conn = new Connection(fd);
-    // conns.insert(std::make_pair(fd, conn));
-
-
-    // struct Connection* conn = (struct Connection*)malloc(sizeof(struct Connection));
-    // conn->handler = connection_handler;
-    // conn->fd = fd;
-    // conn->buf = buf;
-
-    // struct epoll_event event;
-    // event.events = EPOLLIN;
-    // event.data.ptr = conn;
-    // if  (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)  perror("epoll_ctl add error");
 
     struct Connection* conn = connection_constructor(fd, epoll_fd, buf);
-
 }
 
-
-// void close_conn(int fd, int epoll_fd, ConnectionMap& conns, ConnectionMap::iterator& it)
-// {
-//     if  (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1) perror("epoll_ctl del error");
-    
-//     delete it->second;
-//     conns.erase(it);
-
-//     close(fd);
-//     printf("fd %d is closed\n", fd);
-// }
-
-// void close_conn(int epoll_fd, void* data)
-// {
-//     struct Connection* conn = (struct Connection*)data;
-//     int fd = conn->fd;
-
-//     if  (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1) perror("epoll_ctl del error");
-
-//     close(fd);
-
-//     free(conn);
-//     printf("fd %d is closed\n", fd);
-// }
 
 
 // one loop per thread
@@ -246,10 +156,6 @@ void* loop(void* arg)
     listen_event.data.ptr = NULL;
     if  (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd, &listen_event) == -1)  perror("epoll_ctl listen_fd error");
 
-    // struct epoll_event* events = new struct epoll_event[max_events];
-    // // memset(events, 0, sizeof(struct epoll_event) * max_events);
-    // char* echo_buf = new char[buf_size];
-
     struct epoll_event* events = (struct epoll_event*)malloc(sizeof(struct epoll_event) * max_events);
     char* echo_buf = (char*)malloc(sizeof(char) * buf_size);
 
@@ -262,9 +168,7 @@ void* loop(void* arg)
         if  ((num = epoll_wait(epoll_fd, events, max_events, -1)) == -1)  perror("epoll_wait error");
 
         for (int i = 0; i < num; i++)
-        {   // struct epoll_event& event = events[i];
-            uint32_t evs = events[i].events;
-            // int fd = events[i].data.fd;
+        {   uint32_t evs = events[i].events;
             void* data = events[i].data.ptr;
 
             // if  (fd == listen_fd)
@@ -274,30 +178,15 @@ void* loop(void* arg)
             }
             else
             {
-                // ConnectionMap::iterator it =  conns.find(fd);
-                // if  (it != conns.end())
-                // {
-                //     // use handle(events) as interface between eventloop and concrete object.
-                //     int ret = it->second->handle(event.events, echo_buf);
-                //     // printf("fd: %d, ret: %d\n", fd, ret);
-                //     if  (ret < 0) close_conn(fd, epoll_fd, conns, it);
-                // }
-                // else
-                //     printf("fd not found\n");
-
-
+                // use int handle(void* data, uint32_t events) as interface between epoll and concret handler, e.g. connection.
                 if  (epoll_handle(data, evs) < 0)
                     epoll_destruct(data);
-                    // close_conn(epoll_fd, data);
-                    // close_conn(fd, epoll_fd, conns, it); 
             }
         }
     }
 
     close(epoll_fd);
     close(listen_fd);
-    // delete[] events;
-    // delete[] echo_buf;
     free(events);
     free(echo_buf);
     printf("loop on fd %d exit\n", listen_fd);
@@ -326,7 +215,6 @@ int main(int argc, char** argv)
     if  ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)  perror("socket error");
 
     if  (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK) < 0) perror("fcntl error");  
-
 
     if  (bind(fd, (struct sockaddr*)&this_addr, sizeof(struct sockaddr)) == -1)  perror("bind error");
 

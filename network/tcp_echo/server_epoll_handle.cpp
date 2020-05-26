@@ -72,6 +72,7 @@ class Connection : public EpollHandler
         return send_len;
     }
 
+    // this is the main interface for epoll users.
     virtual int handle(uint32_t events)
     {
         int ret = 0;
@@ -104,18 +105,6 @@ void handle_accept(int listen_fd, int epoll_fd, char* buf)
 
     Connection* conn = new Connection(fd, epoll_fd, buf);
 }
-
-
-// void close_conn(int fd, int epoll_fd, ConnectionMap& conns, ConnectionMap::iterator& it)
-// {
-//     if  (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1) perror("epoll_ctl del error");
-    
-//     delete it->second;
-//     conns.erase(it);
-
-//     close(fd);
-//     printf("fd %d is closed\n", fd);
-// }
 
 
 // one loop per thread
