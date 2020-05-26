@@ -100,6 +100,7 @@ public:
         // return 0;
 
         int tmp = 0;
+        // this need not while.
         while ((tmp = ::recv(fd, buf, buf_size, 0)) > 0)
         {   recv_len += tmp;
         }

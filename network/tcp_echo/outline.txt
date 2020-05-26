@@ -26,7 +26,7 @@ server_epollout.cpp: one_loop_per_thread, single_thread, epoll, level_trigger, E
 
 server_epoll_et_ref.cpp:
 
-server_epoll_et.cpp: one_loop_per_thread, single_thread, epoll, edge_trigger, EPOLLIN, nonblocking, 
+server_epoll_et.cpp: one_loop_per_thread, single_thread, epoll, edge_trigger, EPOLLIN, EPOLLOUT, nonblocking, 
 
 
 
