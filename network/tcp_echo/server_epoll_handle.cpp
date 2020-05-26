@@ -17,7 +17,6 @@
 #include <pthread.h>
 #include <fcntl.h>
 
-// #include "util.h"
 
 
 const int buf_size = 4096;
@@ -39,7 +38,7 @@ class Connection : public EpollHandler
     char* buf;
     int fd;
     int epoll_fd;
-    // char buf[buf_size];
+
 
     Connection(int fd, int epoll_fd, char* buf) : fd(fd), epoll_fd(epoll_fd), buf(buf) 
     {
@@ -89,8 +88,7 @@ class Connection : public EpollHandler
     }
 };
 
-// typedef std::unordered_map<int, Connection*> ConnectionMap;
-// ConnectionMap conns;
+
 
 void handle_accept(int listen_fd, int epoll_fd, char* buf)
 {
@@ -104,13 +102,6 @@ void handle_accept(int listen_fd, int epoll_fd, char* buf)
     printf("establish connection on fd %d form %s:%d\n", fd, inet_ntoa(that_addr.sin_addr), 
             ntohs(that_addr.sin_port));
 
-    // struct epoll_event event;
-    // event.events = EPOLLIN;
-    // event.data.fd = fd;
-    // if  (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)  perror("epoll_ctl add error");
-
-    // Connection* conn = new Connection(fd);
-    // conns.insert(std::make_pair(fd, conn));
     Connection* conn = new Connection(fd, epoll_fd, buf);
 }
 
@@ -156,9 +147,7 @@ void* loop(void* arg)
         if  ((num = epoll_wait(epoll_fd, events, max_events, -1)) == -1)  perror("epoll_wait error");
 
         for (int i = 0; i < num; i++)
-        {   // struct epoll_event& event = events[i];
-            // int fd = events[i].data.fd;
-            uint32_t evs = events[i].events;
+        {   uint32_t evs = events[i].events;
             void* data = events[i].data.ptr;
 
             // if  (fd == listen_fd)
@@ -167,18 +156,7 @@ void* loop(void* arg)
                 handle_accept(listen_fd, epoll_fd, echo_buf);
             }
             else
-            {
-                // ConnectionMap::iterator it =  conns.find(fd);
-                // if  (it != conns.end())
-                // {
-                //     // use handle(events) as interface between eventloop and concrete object.
-                //     int ret = it->second->handle(event.events, echo_buf);
-                //     // printf("fd: %d, ret: %d\n", fd, ret);
-                //     if  (ret < 0) close_conn(fd, epoll_fd, conns, it);
-                // }
-                // else
-                //     printf("fd not found\n");
-            
+            {            
                 // use int handle(void* data, uint32_t events) as interface between epoll and concret handler, e.g. connection.
                 struct EpollHandler* epoll_handler = (struct EpollHandler*)data;
 
@@ -219,7 +197,6 @@ int main(int argc, char** argv)
     if  ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)  perror("socket error");
 
     if  (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK) < 0) perror("fcntl error");  
-
 
     if  (bind(fd, (struct sockaddr*)&this_addr, sizeof(struct sockaddr)) == -1)  perror("bind error");
 
