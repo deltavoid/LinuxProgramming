@@ -26,17 +26,44 @@ const int max_events = 4096;
 
 
 
-class Connection
+class EpollHandler
 {public:
+    virtual int handle(uint32_t events) { return -1;}
+    virtual ~EpollHandler() {}
+};
+
+
+
+class Connection : public EpollHandler
+{public:
+    char* buf;
     int fd;
+    int epoll_fd;
     // char buf[buf_size];
 
-    Connection(int fd) : fd(fd) {}
-    ~Connection() {}
+    Connection(int fd, int epoll_fd, char* buf) : fd(fd), epoll_fd(epoll_fd), buf(buf) 
+    {
+        struct epoll_event event;
+        event.events = EPOLLIN;
+        event.data.ptr = this;
+
+        if  (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event) < 0)
+        {   perror("epoll_ctl_add error");
+        }
+    }
+
+    virtual ~Connection() 
+    {
+        if  (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL) < 0)
+            perror("epoll_ctl_del error");
+        
+        close(fd);
+        printf("fd %d is closed\n", fd);
+    }
 
 
     // this has not failure tolerrance
-    int handle_echo(char* buf)
+    int echo()
     {
         int recv_len = recv(fd, buf, buf_size, 0);
         // printf("recv %d bytes on fd %d\n", recv_len, fd);
@@ -46,13 +73,13 @@ class Connection
         return send_len;
     }
 
-    int handle(int events, char* buf)
+    virtual int handle(uint32_t events)
     {
         int ret = 0;
 
         if  (events & EPOLLIN)
         {
-            if  (handle_echo(buf) <= 0)
+            if  (echo() <= 0)
                 ret = -1; 
         }
         else
@@ -62,10 +89,10 @@ class Connection
     }
 };
 
-typedef std::unordered_map<int, Connection*> ConnectionMap;
-ConnectionMap conns;
+// typedef std::unordered_map<int, Connection*> ConnectionMap;
+// ConnectionMap conns;
 
-void handle_accpet(int listen_fd, int epoll_fd, ConnectionMap& conns)
+void handle_accpet(int listen_fd, int epoll_fd, char* buf)
 {
     struct sockaddr_in that_addr;
     int sin_size = sizeof(struct sockaddr_in);
@@ -77,26 +104,27 @@ void handle_accpet(int listen_fd, int epoll_fd, ConnectionMap& conns)
     printf("establish connection on fd %d form %s:%d\n", fd, inet_ntoa(that_addr.sin_addr), 
             ntohs(that_addr.sin_port));
 
-    struct epoll_event event;
-    event.events = EPOLLIN;
-    event.data.fd = fd;
-    if  (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)  perror("epoll_ctl add error");
+    // struct epoll_event event;
+    // event.events = EPOLLIN;
+    // event.data.fd = fd;
+    // if  (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)  perror("epoll_ctl add error");
 
-    Connection* conn = new Connection(fd);
-    conns.insert(std::make_pair(fd, conn));
+    // Connection* conn = new Connection(fd);
+    // conns.insert(std::make_pair(fd, conn));
+    Connection* conn = new Connection(fd, epoll_fd, buf);
 }
 
 
-void close_conn(int fd, int epoll_fd, ConnectionMap& conns, ConnectionMap::iterator& it)
-{
-    if  (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1) perror("epoll_ctl del error");
+// void close_conn(int fd, int epoll_fd, ConnectionMap& conns, ConnectionMap::iterator& it)
+// {
+//     if  (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1) perror("epoll_ctl del error");
     
-    delete it->second;
-    conns.erase(it);
+//     delete it->second;
+//     conns.erase(it);
 
-    close(fd);
-    printf("fd %d is closed\n", fd);
-}
+//     close(fd);
+//     printf("fd %d is closed\n", fd);
+// }
 
 
 // one loop per thread
@@ -111,7 +139,8 @@ void* loop(void* arg)
 
     struct epoll_event listen_event;
     listen_event.events = EPOLLIN;
-    listen_event.data.fd = listen_fd;
+    // listen_event.data.fd = listen_fd;
+    listen_event.data.ptr = NULL;
     if  (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd, &listen_event) == -1)  perror("epoll_ctl listen_fd error");
 
     struct epoll_event* events = new struct epoll_event[max_events];
@@ -127,26 +156,36 @@ void* loop(void* arg)
         if  ((num = epoll_wait(epoll_fd, events, max_events, -1)) == -1)  perror("epoll_wait error");
 
         for (int i = 0; i < num; i++)
-        {   struct epoll_event& event = events[i];
-            int fd = events[i].data.fd;
+        {   // struct epoll_event& event = events[i];
+            // int fd = events[i].data.fd;
+            uint32_t evs = events[i].events;
+            void* data = events[i].data.ptr;
 
-            if  (fd == listen_fd)
+            // if  (fd == listen_fd)
+            if  (data == NULL)
             {
-                handle_accpet(listen_fd, epoll_fd, conns);
+                handle_accpet(listen_fd, epoll_fd, echo_buf);
             }
             else
             {
-                ConnectionMap::iterator it =  conns.find(fd);
-                if  (it != conns.end())
-                {
-                    // use handle(events) as interface between eventloop and concrete object.
-                    int ret = it->second->handle(event.events, echo_buf);
-                    // printf("fd: %d, ret: %d\n", fd, ret);
-                    if  (ret < 0) close_conn(fd, epoll_fd, conns, it);
-                }
-                else
-                    printf("fd not found\n");
+                // ConnectionMap::iterator it =  conns.find(fd);
+                // if  (it != conns.end())
+                // {
+                //     // use handle(events) as interface between eventloop and concrete object.
+                //     int ret = it->second->handle(event.events, echo_buf);
+                //     // printf("fd: %d, ret: %d\n", fd, ret);
+                //     if  (ret < 0) close_conn(fd, epoll_fd, conns, it);
+                // }
+                // else
+                //     printf("fd not found\n");
+            
+                // use int handle(void* data, uint32_t events) as interface between epoll and concret handler, e.g. connection.
+                struct EpollHandler* epoll_handler = (struct EpollHandler*)data;
+
+                if  (epoll_handler->handle(evs) < 0)
+                    delete epoll_handler;
             }
+
         }
     }
 
