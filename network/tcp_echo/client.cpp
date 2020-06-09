@@ -43,7 +43,11 @@ void* worker(void* arg)
 
         memset(recv_buf, 0, buf_size);
         int recv_len = recv_full(fd, recv_buf, buf_size, 0);
-        
+        if  (recv_len < send_len)
+        {   printf("conn error\n");
+            break;
+        }
+
         sleep(1);
     }
 
