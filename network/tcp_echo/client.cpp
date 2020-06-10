@@ -18,6 +18,7 @@
 #include "util.h"
 
 const int max_conn = 1000;
+const int max_buf_size = 1024;
 int sock_fds[max_conn];
 pthread_t sock_threads[max_conn];
 
@@ -33,17 +34,21 @@ void* worker(void* arg)
 
     char send_buf[buf_size];
     char recv_buf[buf_size];
+    for (int j = 0; j < buf_size; j++)
+            send_buf[j] = fd;
 
     for (int i = 0; i < request_num; i++)
     {
         printf("i: %d\n", i);
-        for (int j = 0; j < buf_size; j++)
-            send_buf[i] = fd;
         int send_len = send_full(fd, send_buf, buf_size, 0);
 
         memset(recv_buf, 0, buf_size);
         int recv_len = recv_full(fd, recv_buf, buf_size, 0);
-        
+        if  (recv_len < send_len)
+        {   printf("conn error\n");
+            break;
+        }
+
         sleep(1);
     }
 

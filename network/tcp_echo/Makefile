@@ -71,7 +71,7 @@ server_epollout: server_epollout.cpp
 
 
 client: client.cpp util.h util.cpp
-	g++ -o $@ $^ -pthread
+	g++ -g -fno-omit-frame-pointer -o $@ $^ -pthread
 
 client_epoll_bench: client_epoll_bench.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
