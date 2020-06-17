@@ -92,9 +92,11 @@ int main(int argc, char** argv)
         if  ((sock_fds[i] = socket(AF_INET, SOCK_STREAM, 0)) == -1)  perror("socket error");
         
 
-        if  (connect(sock_fds[i], (struct sockaddr*)&that_addr, sizeof(struct sockaddr)) == -1)  perror("connect error");
-        printf("establish connection %d to %s:%d\n", sock_fds[i], 
-                inet_ntoa(that_addr.sin_addr), ntohs(that_addr.sin_port));
+        if  (connect(sock_fds[i], (struct sockaddr*)&that_addr, sizeof(struct sockaddr)) < 0)  
+            perror("connect error");
+        else
+            printf("establish connection %d to %s:%d\n", sock_fds[i], 
+                    inet_ntoa(that_addr.sin_addr), ntohs(that_addr.sin_port));
 
         if  (pthread_create(&sock_threads[i], NULL, worker, &sock_fds[i]) == -1)  perror("pthread_create error");
     
