@@ -22,6 +22,9 @@ server_epoll_handle.cpp: one_loop_per_thread, single_thread, epoll, level_trigge
 
 server_epoll_handle.c: one_loop_per_thread, single_thread, epoll, level_trigger, EPOLLIN, nonblocking, use handle(events) as interface between eventloop and concrete object
 
+server_poll_handle.cpp: one_loop_per_thread, single_thread, poll, POLLIN, nonblocking, use handle(events) as interface between eventloop and concrete object
+
+
 server_epollout_ref.cpp: 
 
 server_epollout.cpp: one_loop_per_thread, single_thread, epoll, level_trigger, EPOLLIN, EPOLLOUT, nonblocking, 

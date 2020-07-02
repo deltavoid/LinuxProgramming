@@ -23,6 +23,9 @@ run_server_epoll_handle: server_epoll_handle
 run_server_epoll_handle_c: server_epoll_handle_c
 	./$< $(PORT)
 
+run_server_poll_handle: server_poll_handle
+	./$< $(PORT)
+
 run_server_epoll_et_ref: server_epoll_et_ref
 	./$< 
 
@@ -58,6 +61,9 @@ server_epoll_handle: server_epoll_handle.cpp
 	g++ -o $@ $^ -pthread
 
 server_epoll_handle_c: server_epoll_handle.c
+	g++ -o $@ $^ -pthread
+
+server_poll_handle: server_poll_handle.cpp
 	g++ -o $@ $^ -pthread
 
 server_epoll_et_ref: server_epoll_et_ref.cpp
