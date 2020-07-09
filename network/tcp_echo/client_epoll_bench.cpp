@@ -10,6 +10,8 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <unordered_map>
+#include <algorithm>
 #include <memory>
 #include <thread>
 
@@ -36,12 +38,23 @@ int pkt_size = 64;
 int duration = 10;
 
 
-ll get_p99(std::map<ll, ll>* tails, ll tail_num)
+ll get_p99(std::unordered_map<ll, ll>* tails, ll tail_num)
 {
+    
+    std::vector<std::pair<ll, ll>> sorted;
+
+    std::unordered_map<ll, ll>::iterator it;
+    for (it = tails->begin(); it != tails->end(); it++)
+        sorted.push_back(std::make_pair(it->first, it->second));
+
+    sort(sorted.begin(), sorted.end());
+
+
     ll p99 = 0;
     ll n = 0;
-    std::map<ll, ll>::reverse_iterator rit;
-    for (rit = tails->rbegin(); rit != tails->rend(); rit++)
+    // std::map<ll, ll>::reverse_iterator rit;
+    std::vector<std::pair<ll, ll>>::reverse_iterator rit;
+    for (rit = sorted.rbegin(); rit != sorted.rend(); rit++)
     {
         n += rit->second;
         if  (n >= tail_num)
@@ -61,7 +74,8 @@ class Total
     double latencies;
     ll num;
     
-    std::map<ll, ll> tails;
+    // std::map<ll, ll> tails;
+    std::unordered_map<ll, ll> tails;
 
     Total()
     {
@@ -159,7 +173,7 @@ class LatencyTracer
     {
         double sum = 0;
         ll num = 0;
-        std::map<ll, ll> tails;
+        // std::map<ll, ll> tails;
 
         const ll buf_bits = 8;
         const ll buf_size = 1 << buf_bits;
@@ -172,7 +186,7 @@ class LatencyTracer
 
                 sum += x;
                 num++;
-                tails[x]++;
+                // tails[x]++;
                 total->tails[x]++;
             }
         }
@@ -182,7 +196,7 @@ class LatencyTracer
 
         // printf("latency num: %lld\n", num);
         printf("latency avg us: %.2lf  ", sum / num);
-        printf("latency p99 us: %lld  ", ::get_p99(&tails, num / 100));
+        // printf("latency p99 us: %lld  ", ::get_p99(&tails, num / 100));
     }
 };
 
