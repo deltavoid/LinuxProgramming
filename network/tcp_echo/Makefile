@@ -23,6 +23,9 @@ run_server_epoll_handle: server_epoll_handle
 run_server_epoll_handle_c: server_epoll_handle_c
 	./$< $(PORT)
 
+run_server_poll_handle: server_poll_handle
+	./$< $(PORT)
+
 run_server_epoll_et_ref: server_epoll_et_ref
 	./$< 
 
@@ -60,6 +63,9 @@ server_epoll_handle: server_epoll_handle.cpp
 server_epoll_handle_c: server_epoll_handle.c
 	g++ -o $@ $^ -pthread
 
+server_poll_handle: server_poll_handle.cpp
+	g++ -o $@ $^ -pthread
+
 server_epoll_et_ref: server_epoll_et_ref.cpp
 	g++ -o $@ $^ -pthread
 
@@ -71,7 +77,7 @@ server_epollout: server_epollout.cpp
 
 
 client: client.cpp util.h util.cpp
-	g++ -o $@ $^ -pthread
+	g++ -g -fno-omit-frame-pointer -o $@ $^ -pthread
 
 client_epoll_bench: client_epoll_bench.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
