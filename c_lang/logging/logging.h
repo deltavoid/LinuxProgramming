@@ -1,5 +1,7 @@
 #ifndef LOGGING_H
 #define LOGGING_H
+// #include <pthread.h>
+#include <unistd.h>
 
 
 #define LOG_LEVEL_DEBUG  0
@@ -10,7 +12,7 @@
 
 #define OUTPUT_FILE stderr
 
-#define CURRENT_LOG_LEVEL LOG_LEVEL_INFO
+#define CURRENT_LOG_LEVEL LOG_LEVEL_DEBUG
 
 // #define ESC_START     "\033["
 // #define ESC_END       "\033[0m"
@@ -27,7 +29,8 @@
 #if (LOG_LEVEL_DEBUG >= CURRENT_LOG_LEVEL)
     // #define LOG_DEBUG(format, args...) (fprintf(OUTPUT_FILE,  ESC_START COLOR_INFO "[INFO]-[%s]-[%d]-[%s]:" format ESC_END, __FILE__, __LINE__, __FUNCTION__ , ##args))
     // #define LOG_DEBUG(format, args...) (printf( ESC_START COLOR_INFO "[INFO]-[%s]-[%s]-[%d]:" format ESC_END, __FILE__, __FUNCTION__ , __LINE__, ##args))
-    #define LOG_DEBUG(format, args...) (fprintf(OUTPUT_FILE, "DEBUG %s %d %s] " format , __FILE__, __LINE__, __FUNCTION__ , ##args))
+    // #define LOG_DEBUG(format, args...) (fprintf(OUTPUT_FILE, "DEBUG %s %d %s: " format , __FILE__, __LINE__, __FUNCTION__ , ##args))
+    #define LOG_DEBUG(format, args...) (fprintf(OUTPUT_FILE, "DEBUG 00:00:00.000000 %d %-24s %4d] " format , getpid(), __FILE__, __LINE__, ##args))
 #else
     #define LOG_DEBUG(format, args...) do{}while(0)
 #endif 
