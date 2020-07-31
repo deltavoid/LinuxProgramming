@@ -4,4 +4,4 @@ run: main
 	./$<
 
 main: main.c logging.h
-	gcc -o $@ $^ 
+	gcc -g -fno-omit-frame-pointer -rdynamic -o $@ $^ 

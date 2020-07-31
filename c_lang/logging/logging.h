@@ -1,5 +1,9 @@
 #ifndef LOGGING_H
 #define LOGGING_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <execinfo.h>
 // #include <pthread.h>
 #include <unistd.h>
 
@@ -60,6 +64,38 @@
     #define LOG_FATAL(format, args...) do{}while(0)
 #endif
 
+
+#if (LOG_LEVEL_DEBUG >= CURRENT_LOG_LEVEL)
+
+
+static inline void print_stack(void* addrs, int num)
+{
+    char** stack = backtrace_symbols(addrs, num);
+    
+    fprintf(OUTPUT_FILE, "----backtrace begin----\n");
+    for (int i = 0; i < num; i++)
+        fprintf(OUTPUT_FILE, "%d: %s\n", i, stack[i]);
+    fprintf(OUTPUT_FILE, "----backtrace end----\n");
+
+    free(stack);
+}
+
+#define MAX_STACK_DEPTH 64
+
+#define bt_debug() \
+do \
+{ \
+    void* addrs[MAX_STACK_DEPTH]; \
+    int num = backtrace(addrs, MAX_STACK_DEPTH); \
+    print_stack(addrs, num); \
+} while(0)
+
+#else
+
+#define bt_debug() \
+do {} while(0)
+
+#endif
 
 
 #endif // LOGGING_H
