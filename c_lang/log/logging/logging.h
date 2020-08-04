@@ -68,7 +68,7 @@
 #if (LOG_LEVEL_DEBUG >= CURRENT_LOG_LEVEL)
 
 
-static inline void print_stack(void* addrs, int num)
+static inline void print_stack(void** addrs, int num)
 {
     char** stack = backtrace_symbols(addrs, num);
     
