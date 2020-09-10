@@ -6,6 +6,7 @@
 #include <execinfo.h>
 // #include <pthread.h>
 #include <unistd.h>
+#include <sys/syscall.h>
 
 
 #define LOG_LEVEL_DEBUG  0
@@ -34,7 +35,7 @@
     // #define LOG_DEBUG(format, args...) (fprintf(OUTPUT_FILE,  ESC_START COLOR_INFO "[INFO]-[%s]-[%d]-[%s]:" format ESC_END, __FILE__, __LINE__, __FUNCTION__ , ##args))
     // #define LOG_DEBUG(format, args...) (printf( ESC_START COLOR_INFO "[INFO]-[%s]-[%s]-[%d]:" format ESC_END, __FILE__, __FUNCTION__ , __LINE__, ##args))
     // #define LOG_DEBUG(format, args...) (fprintf(OUTPUT_FILE, "DEBUG %s %d %s: " format , __FILE__, __LINE__, __FUNCTION__ , ##args))
-    #define LOG_DEBUG(format, args...) (fprintf(OUTPUT_FILE, "DEBUG 00:00:00.000000 %d %-24s %4d] " format , getpid(), __FILE__, __LINE__, ##args))
+    #define LOG_DEBUG(format, args...) (fprintf(OUTPUT_FILE, "DEBUG 00:00:00.000000 %d %-24s %4d] " format , syscall(__NR_gettid) , __FILE__, __LINE__, ##args))
 #else
     #define LOG_DEBUG(format, args...) do{}while(0)
 #endif 

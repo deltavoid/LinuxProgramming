@@ -37,6 +37,8 @@ void *worker(void *arg)
         printf("recv_len: %d\n", recv_len);
 
         int send_len = send_full(fd, buf, recv_len, 0);
+        if  (send_len < recv_len) 
+            break;
     }
 
     close(fd);

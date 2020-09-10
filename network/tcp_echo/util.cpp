@@ -9,7 +9,10 @@ ssize_t send_full(int fd, const char* msg, size_t len, int flags)
     ssize_t sent;
 
     while (remaining > 0) {
-        if  ((sent = send(fd, cur, remaining, flags)) == -1)  perror("send");
+        if  ((sent = send(fd, cur, remaining, flags)) == -1)  
+        {   perror("send");
+            break;
+        }
         cur += sent;
         remaining -= sent;
     }
