@@ -18,6 +18,11 @@
 
 
 
+// extern struct proc_dir_entry *proc_create_data(const char *, umode_t,
+// 		struct proc_dir_entry *, const struct file_operations *, void *);
+// extern void *PDE_DATA(const struct inode *);
+
+
 #define FOOBAR_LEN 60
 
 struct fb_data{
@@ -123,8 +128,9 @@ static ssize_t jiffies_entry_read(struct file *fp, char __user *buf, size_t size
 {
     char res[100];
     int len = 0;
+    int* data = PDE_DATA(file_inode(fp));
     
-    pr_debug("offp: %lx, off: %lld\n", (long unsigned int)offp, *offp);
+    pr_debug("data: %p, %x, offp: %lx, off: %lld\n", data, *data,  (long unsigned int)offp, *offp);
     if  (*offp > 0)  return 0;
 
     len = sprintf(res, "jiffies = %ld\n", jiffies);
@@ -151,13 +157,15 @@ static const struct file_operations jiffies_entry_fops =
 
 static struct proc_dir_entry *example_entry, *foo_entry, *bar_entry, *jiffies_entry;
 
+int data = 0x12345678;
+
 static int __init proc_entry2_init(void)
 {
 
     example_entry = proc_mkdir("example", NULL);
     if  (!example_entry) goto err_example;
 
-    jiffies_entry = proc_create("jiffies", 0444, example_entry, &jiffies_entry_fops);
+    jiffies_entry = proc_create_data("jiffies", 0444, example_entry, &jiffies_entry_fops, &data);
     if  (!jiffies_entry)  goto err_jiffies;
 
     bar_entry = proc_create("bar", 0, example_entry, &bar_entry_fops);
