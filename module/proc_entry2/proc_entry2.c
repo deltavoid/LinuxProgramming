@@ -23,6 +23,61 @@
 // extern void *PDE_DATA(const struct inode *);
 
 
+
+
+
+// // foo ---------------------------------------------------------
+
+// struct fb_data foo_data = {"foo", "blank"};
+
+// static int foo_entry_show(struct seq_file *seq, void *arg)
+// {
+//     pr_debug("foo_entry_show\n");
+
+//     seq_puts(seq, "hello, ");
+    
+//     seq_printf(seq, "%s is %s", foo_data.name, foo_data.value);
+
+
+//     return 0;
+// }
+
+// static int foo_entry_open(struct inode *inode, struct file *file)
+// {
+//     pr_debug("foo_entry_open\n");
+
+//     return single_open(file, foo_entry_show, NULL);
+// }
+
+// static ssize_t foo_entry_write(struct file *fp, const char __user *buf, size_t size, loff_t *offp)
+// {
+//     if  (size > FOOBAR_LEN - 1)  return -1;
+
+//     if  (copy_from_user(foo_data.value, buf, size) != 0)  return -1;
+//     foo_data.value[size] = '\0';
+
+//     *offp += size;
+
+//     return size;
+// }
+
+
+// static const struct file_operations foo_entry_fops = 
+// {
+//     .owner      = THIS_MODULE,
+//     .open       = foo_entry_open,
+//     .read       = seq_read,
+//     .llseek     = seq_lseek,
+//     .release    = single_release,
+//     .write      = foo_entry_write,
+// };
+
+
+
+
+// bar --------------------------------------------------------------
+
+
 #define FOOBAR_LEN 60
 
 struct fb_data{
@@ -31,59 +86,9 @@ struct fb_data{
 };
 
 
-// foo ---------------------------------------------------------
-
-struct fb_data foo_data = {"foo", "blank"};
-
-static int foo_entry_show(struct seq_file *seq, void *arg)
-{
-    pr_debug("foo_entry_show\n");
-
-    seq_puts(seq, "hello, ");
-    
-    seq_printf(seq, "%s is %s", foo_data.name, foo_data.value);
-
-
-    return 0;
-}
-
-static int foo_entry_open(struct inode *inode, struct file *file)
-{
-    pr_debug("foo_entry_open\n");
-
-    return single_open(file, foo_entry_show, NULL);
-}
-
-static ssize_t foo_entry_write(struct file *fp, const char __user *buf, size_t size, loff_t *offp)
-{
-    if  (size > FOOBAR_LEN - 1)  return -1;
-
-    if  (copy_from_user(foo_data.value, buf, size) != 0)  return -1;
-    foo_data.value[size] = '\0';
-
-    *offp += size;
-
-    return size;
-}
-
-
-static const struct file_operations foo_entry_fops = 
-{
-    .owner      = THIS_MODULE,
-    .open       = foo_entry_open,
-    .read       = seq_read,
-    .llseek     = seq_lseek,
-    .release    = single_release,
-    .write      = foo_entry_write,
-};
-
-
-
-
-// bar --------------------------------------------------------------
-
-
 static struct fb_data bar_data = { "bar", "blank"};
+
+
 
 static ssize_t bar_entry_read(struct file *fp, char __user *buf, size_t size, loff_t *offp )
 {
@@ -127,42 +132,51 @@ static const struct file_operations bar_entry_fops =
     .write      = bar_entry_write,
 };
 
-// jiffies ----------------------------------------------------------
+// // jiffies ----------------------------------------------------------
 
 
-static ssize_t jiffies_entry_read(struct file *fp, char __user *buf, size_t size, loff_t *offp)
-{
-    char res[100];
-    int len = 0;
-    // int* data = PDE_DATA(file_inode(fp));
+// static ssize_t jiffies_entry_read(struct file *fp, char __user *buf, size_t size, loff_t *offp)
+// {
+//     char res[100];
+//     int len = 0;
+//     // int* data = PDE_DATA(file_inode(fp));
     
-    // pr_debug("data: %p, %x, offp: %lx, off: %lld\n", data, *data,  (long unsigned int)offp, *offp);
-    if  (*offp > 0)  return 0;
+//     // pr_debug("data: %p, %x, offp: %lx, off: %lld\n", data, *data,  (long unsigned int)offp, *offp);
+//     if  (*offp > 0)  return 0;
 
-    len = sprintf(res, "jiffies = %ld\n", jiffies);
-    if  (len < 0)  return -1;
+//     len = sprintf(res, "jiffies = %ld\n", jiffies);
+//     if  (len < 0)  return -1;
 
-    if  (size < len)  return -1;
+//     if  (size < len)  return -1;
 
-    if  (copy_to_user(buf, res, len) != 0)  return -1;
+//     if  (copy_to_user(buf, res, len) != 0)  return -1;
     
-    // operation per file
-    *offp += len;
+//     // operation per file
+//     *offp += len;
 
-    return len;
-}
+//     return len;
+// }
 
 
-static const struct file_operations jiffies_entry_fops = 
-{
-    .owner      = THIS_MODULE,
-    .read       = jiffies_entry_read,
-};
+// static const struct file_operations jiffies_entry_fops = 
+// {
+//     .owner      = THIS_MODULE,
+//     .read       = jiffies_entry_read,
+// };
 
 
 // init ------------------------------------------------
 
-static struct proc_dir_entry *example_entry, *foo_entry, *bar_entry, *jiffies_entry;
+
+
+
+
+// static struct proc_dir_entry *example_entry, *foo_entry, *bar_entry, *jiffies_entry;
+static struct proc_dir_entry *example_entry;
+
+static struct proc_dir_entry *bar_entry;
+
+
 
 
 
@@ -172,23 +186,23 @@ static int __init proc_entry2_init(void)
     example_entry = proc_mkdir("example", NULL);
     if  (!example_entry) goto err_example;
 
-    jiffies_entry = proc_create("jiffies", 0444, example_entry, &jiffies_entry_fops);
-    if  (!jiffies_entry)  goto err_jiffies;
+    // jiffies_entry = proc_create("jiffies", 0444, example_entry, &jiffies_entry_fops);
+    // if  (!jiffies_entry)  goto err_jiffies;
 
     bar_entry = proc_create_data("bar", 0, example_entry, &bar_entry_fops, &bar_data);
     if  (!bar_entry)  goto err_bar;
     pr_debug("bar_entry: %p, bar_data: %p\n", bar_entry, &bar_data);
 
-    foo_entry = proc_create("foo", 0, example_entry, &foo_entry_fops);
-    if  (!foo_entry)  goto err_foo;
+    // foo_entry = proc_create("foo", 0, example_entry, &foo_entry_fops);
+    // if  (!foo_entry)  goto err_foo;
 
     pr_info("proc_entry2 inserted\n");
     return 0;
 
 err_foo:
-    remove_proc_entry("bar", example_entry);
+    // remove_proc_entry("bar", example_entry);
 err_bar:
-    remove_proc_entry("jiffies", example_entry);
+    // remove_proc_entry("jiffies", example_entry);
 err_jiffies:
     remove_proc_entry("example", NULL);
 err_example:
@@ -197,9 +211,9 @@ err_example:
 
 static void __exit proc_entry2_exit(void)
 {
-    remove_proc_entry("foo", example_entry);
+    // remove_proc_entry("foo", example_entry);
     remove_proc_entry("bar", example_entry);
-    remove_proc_entry("jiffies", example_entry);
+    // remove_proc_entry("jiffies", example_entry);
 	remove_proc_entry("example", NULL);
     
     pr_info("proc_entry2 removed\n");
