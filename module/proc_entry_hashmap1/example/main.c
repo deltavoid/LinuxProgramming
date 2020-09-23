@@ -23,26 +23,28 @@ int main()
     if  (write(fd, &param, sizeof(param)) < 0)
     {
         perror("insert error");
-        return -1;
+        // return -1;
     }
     printf("insert key: %lld, value: %lld\n", param.key, param.value);
 
     param.operation = HELLO_ENTRY_GET;
+    param.key = 2;
     param.value = 0;
 
     // for (int i = 0; i < 3; i++)
     if  (read(fd, &param, sizeof(param)) < 0)
     {
         perror("get error");
-        return -1;
+        // return -1;
     }
     printf("read key: %lld, vlaue: %lld\n", param.key, param.value);
 
     param.operation = HELLO_ENTRY_REMOVE;
+    param.key = 1;
     if  (write(fd, &param, sizeof(param)) < 0)
     {
         perror("remove error");
-        return -1;
+        // return -1;
     }
     printf("remove key: %lld\n", param.key);
 
