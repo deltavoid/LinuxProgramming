@@ -25,6 +25,7 @@ int main()
         perror("insert error");
         return -1;
     }
+    printf("insert key: %lld, value: %lld\n", param.key, param.value);
 
     param.operation = HELLO_ENTRY_GET;
     param.value = 0;
@@ -43,6 +44,7 @@ int main()
         perror("remove error");
         return -1;
     }
+    printf("remove key: %lld\n", param.key);
 
 
     return 0;
