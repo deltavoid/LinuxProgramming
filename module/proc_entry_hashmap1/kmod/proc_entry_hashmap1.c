@@ -61,24 +61,91 @@ struct pe_hashmap
 
 static struct pe_hashmap*  pe_map_create(int buckets_bits)
 {
+    int i;
+
     struct pe_hashmap* map = vmalloc(sizeof(struct pe_hashmap));
+    if  (!map)  
+        goto map_err;
+
+    map->buckets_bits = buckets_bits;
+    map->buckets_num = 1 << map->buckets_bits;
+    map->buckets_mask = map->buckets_num - 1;
+
+    map->buckets = vmalloc(sizeof(struct pe_map_bucket) * map->buckets_num);
+    if  (!map->buckets)  
+        goto buckets_err;
+
+    for (i = 0; i < map->buckets_num; i++)
+    {
+        INIT_HLIST_HEAD(&map->buckets[i].head);
+        spin_lock_init(&map->buckets[i].lock);
+        map->buckets[i].num = 0;
+    }
+
+    map->cache = kmem_cache_create("pe_map_cache", 
+	    sizeof(struct pe_map_entry), 0, SLAB_HWCACHE_ALIGN, NULL);
+    if  (!map->cache)
+        goto cache_err;
+
+
+
     return map;
+
+cache_err:
+    vfree(map->buckets);
+buckets_err:
+    vfree(map);
+map_err:
+    return NULL;
 }
+
+static void pe_map_flush(struct pe_hashmap* map);
 
 static void pe_map_destroy(struct pe_hashmap* map)
 {
+    pe_map_flush(map);
+
+
+    kmem_cache_destroy(map->cache);
+
+    vfree(map->buckets);
+
     vfree(map);
 }
 
-// static unsigned long long pe_entry_hash(long long key)
-// {
-//     return 0;
-// }
+static unsigned long long pe_entry_hash(long long key)
+{
+    unsigned long long src = key;
+    unsigned long long ans = src;
+    ans ^= src >> 16;
+    ans ^= src >> 32;
+    ans ^= src >> 48;
+
+    return ans;
+}
 
 
 static int pe_map_insert(struct pe_hashmap* map, long long key, long long value)
 {
     pr_debug("pe_map_insert: 1, map: %p, key: %lld, vlaue: %lld\n", map, key, value);
+
+    unsigned long long index = pe_entry_hash(key) & map->buckets_mask;
+    struct pe_map_bucket* bucket = &map->buckets[index];
+    struct hlist_head* head = &bucket->head;
+
+    struct pe_map_entry* entry = kmem_cache_alloc(map->cache, GFP_ATOMIC);
+    if  (!entry) 
+        return -1;
+    entry->key = key;
+    entry->value = value;
+
+    
+    spin_lock_bh(&bucket->lock);
+
+    hlist_add_head_rcu(&entry->hlist, head);
+    bucket->num++;
+
+    spin_unlock_bh(&bucket->lock);
 
     return 0;
 }
@@ -87,19 +154,89 @@ static int pe_map_remove(struct pe_hashmap* map, long long key)
 {
     pr_debug("pe_map_remove: 1, map: %p, key: %lld\n", map, key);
 
-    return 0;
+    unsigned long long index = pe_entry_hash(key) & map->buckets_mask;
+    struct pe_map_bucket* bucket = &map->buckets[index];
+    struct hlist_head* head = &bucket->head;
+    struct hlist_node* node;
+    struct pe_map_entry* entry;
+    int ret = -1;
+
+    spin_lock_bh(&bucket->lock);
+
+    hlist_for_each_entry_safe(entry, node, head, hlist)
+    {
+        if  (entry->key == key)
+        {
+            hlist_del_rcu(&entry->hlist);
+            kmem_cache_free(map->cache, entry);
+            bucket->num--;
+
+            ret = 0;
+            break;
+        }
+    }
+
+    spin_unlock_bh(&bucket->lock);
+
+    return ret;
 }
 
 static int pe_map_get(struct pe_hashmap* map, long long key, long long* value)
 {
     pr_debug("pe_map_get: 1, map: %p, key: %lld, vlaue: %p\n", map, key, value);
 
-    *value = 12345678;
+    unsigned long long index = pe_entry_hash(key) & map->buckets_mask;
+    struct pe_map_bucket* bucket = &map->buckets[index];
+    struct hlist_head* head = &bucket->head;
+    // struct hlist_node* node;
+    struct pe_map_entry* entry;
+    int ret = -1;
 
+    spin_lock_bh(&bucket->lock);
 
-    return 0;
+    hlist_for_each_entry_rcu(entry, head, hlist)
+    {
+        if  (entry->key == key)
+        {
+            *value = entry->value;
+            ret = 0;
+            break;
+        }
+    }
+
+    spin_unlock_bh(&bucket->lock);
+
+    return ret;
 }
 
+static void pe_map_flush(struct pe_hashmap* map)
+{
+    int i;
+    long long count = 0;
+
+    for (i = 0; i < map->buckets_num; i++)
+    {
+        struct pe_map_bucket* bucket = &map->buckets[i];
+        struct hlist_head* head = &bucket->head;
+        struct hlist_node* node;
+        struct pe_map_entry* entry;
+
+        spin_lock_bh(&bucket->lock);
+
+        hlist_for_each_entry_safe(entry, node, head, hlist)
+        {
+            hlist_del_rcu(&entry->hlist);
+			bucket->num--;
+            count++;
+
+            kmem_cache_free(map->cache, entry);
+        }
+
+        spin_unlock_bh(&bucket->lock);
+    }
+
+    pr_info("pe_map_flush, count: %lld\n", count);
+}
 
 
 // hello entry --------------------------------------------------------------
