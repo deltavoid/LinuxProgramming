@@ -127,7 +127,7 @@ static unsigned long long pe_entry_hash(long long key)
 
 static int pe_map_insert(struct pe_hashmap* map, long long key, long long value)
 {
-    pr_debug("pe_map_insert: 1, map: %p, key: %lld, vlaue: %lld\n", map, key, value);
+    // pr_debug("pe_map_insert: 1, map: %p, key: %lld, vlaue: %lld\n", map, key, value);
 
     unsigned long long index = pe_entry_hash(key) & map->buckets_mask;
     struct pe_map_bucket* bucket = &map->buckets[index];
@@ -152,7 +152,7 @@ static int pe_map_insert(struct pe_hashmap* map, long long key, long long value)
 
 static int pe_map_remove(struct pe_hashmap* map, long long key)
 {
-    pr_debug("pe_map_remove: 1, map: %p, key: %lld\n", map, key);
+    // pr_debug("pe_map_remove: 1, map: %p, key: %lld\n", map, key);
 
     unsigned long long index = pe_entry_hash(key) & map->buckets_mask;
     struct pe_map_bucket* bucket = &map->buckets[index];
@@ -183,7 +183,7 @@ static int pe_map_remove(struct pe_hashmap* map, long long key)
 
 static int pe_map_get(struct pe_hashmap* map, long long key, long long* value)
 {
-    pr_debug("pe_map_get: 1, map: %p, key: %lld, vlaue: %p\n", map, key, value);
+    // pr_debug("pe_map_get: 1, map: %p, key: %lld, vlaue: %p\n", map, key, value);
 
     unsigned long long index = pe_entry_hash(key) & map->buckets_mask;
     struct pe_map_bucket* bucket = &map->buckets[index];
@@ -248,15 +248,15 @@ static ssize_t entry_read(struct file *fp, char __user *buf, size_t size, loff_t
     struct hello_entry_param param;
 
     
-    pr_debug("entry_read: 1, fp: %p, map: %p, off: %lld\n", fp, map, *offp); // (*offp)++
+    // pr_debug("entry_read: 1, fp: %p, map: %p, off: %lld\n", fp, map, *offp); // (*offp)++
     *offp += 1;
 
     if  (size != sizeof(param))  return -1;
 
     if  (copy_from_user(&param, buf, size) != 0)  return -1;
 
-    pr_debug("entry_read: 2, operation: %lld, key: %lld, value: %lld\n", 
-        param.operation, param.key, param.value);
+    // pr_debug("entry_read: 2, operation: %lld, key: %lld, value: %lld\n", 
+    //     param.operation, param.key, param.value);
 
     if  (param.operation != HELLO_ENTRY_GET)  return -1;
 
@@ -272,15 +272,15 @@ static ssize_t entry_write(struct file *fp, const char __user *buf, size_t size,
     struct pe_hashmap* map = PDE_DATA(file_inode(fp));
     struct hello_entry_param param;
 
-    pr_debug("entry_write: 1, fp: %p, map: %p, off: %lld\n", fp, map, *offp);
+    // pr_debug("entry_write: 1, fp: %p, map: %p, off: %lld\n", fp, map, *offp);
     *offp += 1;
 
     if  (size != sizeof(param))  return -1;
 
     if  (copy_from_user(&param, buf, size) != 0)  return -1;
 
-    pr_debug("entry_write: 2, operation: %lld, key: %lld, vlaue: %lld\n",
-        param.operation, param.key, param.value);
+    // pr_debug("entry_write: 2, operation: %lld, key: %lld, vlaue: %lld\n",
+    //     param.operation, param.key, param.value);
 
     if  (param.operation == HELLO_ENTRY_INSERT)
     {
