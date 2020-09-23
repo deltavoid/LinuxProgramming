@@ -105,6 +105,8 @@ static void pe_map_destroy(struct pe_hashmap* map)
 {
     pe_map_flush(map);
 
+    // synchronize_rcu();
+
 
     kmem_cache_destroy(map->cache);
 
@@ -149,6 +151,7 @@ static int pe_map_insert(struct pe_hashmap* map, long long key, long long value)
         if  (entry->key == key)
         {
             entry->value = value;
+            kmem_cache_free(map->cache, new_entry);
             found = true;
             break;
         }
