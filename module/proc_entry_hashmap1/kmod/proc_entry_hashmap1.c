@@ -132,18 +132,37 @@ static int pe_map_insert(struct pe_hashmap* map, long long key, long long value)
     unsigned long long index = pe_entry_hash(key) & map->buckets_mask;
     struct pe_map_bucket* bucket = &map->buckets[index];
     struct hlist_head* head = &bucket->head;
+    struct pe_map_entry* entry;
+    bool found = false;
 
-    struct pe_map_entry* entry = kmem_cache_alloc(map->cache, GFP_ATOMIC);
-    if  (!entry) 
+    struct pe_map_entry* new_entry = kmem_cache_alloc(map->cache, GFP_ATOMIC);
+    if  (!new_entry) 
         return -1;
-    entry->key = key;
-    entry->value = value;
+    new_entry->key = key;
+    new_entry->value = value;
 
     
     spin_lock_bh(&bucket->lock);
 
-    hlist_add_head_rcu(&entry->hlist, head);
-    bucket->num++;
+    hlist_for_each_entry_rcu(entry, head, hlist)
+    {
+        if  (entry->key == key)
+        {
+            entry->value = value;
+            found = true;
+            break;
+        }
+    }
+
+    if  (!found)
+    {
+        hlist_add_head_rcu(&new_entry->hlist, head);
+        bucket->num++;
+    }
+
+
+    // hlist_add_head_rcu(&entry->hlist, head);
+    // bucket->num++;
 
     spin_unlock_bh(&bucket->lock);
 
