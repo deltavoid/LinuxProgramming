@@ -53,7 +53,7 @@ public:
 
             struct hello_entry_param param = {
                 .operation = HELLO_ENTRY_INSERT,
-                .key = (long long)rand() & 0xffff,
+                .key = (long long)rand() & 0xffffff,
                 .value = (long long)rand(),
             };
 
@@ -61,6 +61,7 @@ public:
             if (write(fd, &param, sizeof(param)) < 0)
             {
                 perror("insert error");
+                running = false;
             }
            //  printf("insert key: %lld, value: %lld\n", param.key, param.value);
 
@@ -75,12 +76,12 @@ public:
             }
             // printf("read key: %lld, vlaue: %lld\n", param.key, param.value);
 
-            param.operation = HELLO_ENTRY_REMOVE;
-            if (write(fd, &param, sizeof(param)) < 0)
-            {
-                perror("remove error");
-                // return -1;
-            }
+            // param.operation = HELLO_ENTRY_REMOVE;
+            // if (write(fd, &param, sizeof(param)) < 0)
+            // {
+            //     perror("remove error");
+            //     // return -1;
+            // }
             // printf("remove key: %lld\n", param.key);
 
             // usleep(1000);
