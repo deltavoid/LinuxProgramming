@@ -137,7 +137,6 @@ static int pe_map_insert(struct pe_hashmap* map, long long key, long long value)
     struct hlist_node* node;
     struct pe_map_entry* entry;
     struct pe_map_entry* old_entry = NULL;
-    // bool found = false;
 
     struct pe_map_entry* new_entry = kmem_cache_alloc(map->cache, GFP_ATOMIC);
     if  (!new_entry) 
@@ -148,35 +147,24 @@ static int pe_map_insert(struct pe_hashmap* map, long long key, long long value)
     
     spin_lock_bh(&bucket->lock);
 
-    // hlist_for_each_entry_rcu(entry, head, hlist)
     hlist_for_each_entry_safe(entry, node, head, hlist)
     {
         if  (entry->key == key)
         {
             // pr_debug("insert found existed key: %lld\n", key);
-            // hlist_del_rcu(&entry->hlist);
-            // old_entry = entry;
-            // bucket->num--;
 
             hlist_replace_rcu(&entry->hlist, &new_entry->hlist);
             old_entry = entry;
 
-            // entry->value = value;
-            // kmem_cache_free(map->cache, new_entry);
-            // found = true;
             break;
         }
     }
 
-    // if  (!found)
     if  (!old_entry)
     {
         hlist_add_head_rcu(&new_entry->hlist, head);
         bucket->num++;
     }
-
-    // hlist_add_head_rcu(&entry->hlist, head);
-    // bucket->num++;
 
     spin_unlock_bh(&bucket->lock);
 
@@ -205,13 +193,11 @@ static int pe_map_remove(struct pe_hashmap* map, long long key)
     spin_lock_bh(&bucket->lock);
 
     hlist_for_each_entry_safe(entry, node, head, hlist)
-
     {
         if  (entry->key == key)
         {
             hlist_del_rcu(&entry->hlist);
             old_entry = entry;
-            // kmem_cache_free(map->cache, entry);
             bucket->num--;
 
             ret = 0;
@@ -238,11 +224,9 @@ static int pe_map_get(struct pe_hashmap* map, long long key, long long* value)
     unsigned long long index = pe_entry_hash(key) & map->buckets_mask;
     struct pe_map_bucket* bucket = &map->buckets[index];
     struct hlist_head* head = &bucket->head;
-    // struct hlist_node* node;
     struct pe_map_entry* entry;
     int ret = -1;
 
-    // spin_lock_bh(&bucket->lock);
     rcu_read_lock();
   
     hlist_for_each_entry_rcu(entry, head, hlist)
@@ -256,7 +240,6 @@ static int pe_map_get(struct pe_hashmap* map, long long key, long long* value)
     }
 
     rcu_read_unlock();
-    // spin_unlock_bh(&bucket->lock);
 
     // if  (ret  < 0)  pr_debug("get error, key: %lld\n", key);
     return ret;
@@ -272,9 +255,6 @@ static void pe_map_flush(struct pe_hashmap* map)
     {
         struct pe_map_bucket* bucket = &map->buckets[i];
         struct hlist_head* head = &bucket->head;
-        // struct hlist_node* node;
-        // struct pe_map_entry* entry;
-        
 
         spin_lock_bh(&bucket->lock);
 
@@ -282,17 +262,6 @@ static void pe_map_flush(struct pe_hashmap* map)
 
         INIT_HLIST_HEAD(head);
         bucket->num = 0;
-
-
-
-        // hlist_for_each_entry_safe(entry, node, head, hlist)
-        // {
-        //     hlist_del_rcu(&entry->hlist);
-		// 	bucket->num--;
-        //     count++;
-
-        //     kmem_cache_free(map->cache, entry);
-        // }
 
         spin_unlock_bh(&bucket->lock);
     }
@@ -311,7 +280,6 @@ static void pe_map_flush(struct pe_hashmap* map)
             kmem_cache_free(map->cache, entry);
             count++;
         }
-
     }
 
     vfree(heads);
