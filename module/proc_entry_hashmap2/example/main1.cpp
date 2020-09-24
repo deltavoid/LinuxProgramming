@@ -48,7 +48,7 @@ public:
     {
         printf("Worker::run, id: %d\n", id);
 
-        std::mt19937 rand(time(NULL));
+        std::mt19937 rand(time(NULL) + id);
 
         while (running)
         {
@@ -73,7 +73,7 @@ public:
             param.value = 0;
             if (read(fd, &param, sizeof(param)) < 0)
             {
-                // printf("get error, key: %lld\n", param.key);
+                printf("get error, key: %lld\n", param.key);
                 // return -1;
             }
             // printf("read key: %lld, vlaue: %lld\n", param.key, param.value);
@@ -84,7 +84,7 @@ public:
             {
                 // perror("remove error");
                 // return -1;
-                // printf("remove key: %lld\n", param.key);    
+                printf("remove error, key: %lld\n", param.key);    
             }
             // printf("remove key: %lld\n", param.key);
 

@@ -42,6 +42,8 @@ struct pe_map_bucket
 struct pe_map_entry
 {
 	struct hlist_node hlist;
+    struct rcu_head rcu;
+    struct kmem_cache* cache;
 	
 	long long key;
     long long value;
@@ -115,6 +117,15 @@ static void pe_map_destroy(struct pe_hashmap* map)
     vfree(map);
 }
 
+
+static void pe_entry_free_rcu(struct rcu_head *head)
+{
+    struct pe_map_entry* entry = container_of(head, struct pe_map_entry, rcu);
+
+    kmem_cache_free(entry->cache, entry);
+}
+
+
 static unsigned long long pe_entry_hash(long long key)
 {
     unsigned long long src = key;
@@ -143,6 +154,7 @@ static int pe_map_insert(struct pe_hashmap* map, long long key, long long value)
         return -1;
     new_entry->key = key;
     new_entry->value = value;
+    new_entry->cache = map->cache;
 
     
     spin_lock_bh(&bucket->lock);
@@ -170,8 +182,9 @@ static int pe_map_insert(struct pe_hashmap* map, long long key, long long value)
 
     if  (old_entry)
     {
-        synchronize_rcu();
-        kmem_cache_free(map->cache, old_entry);
+        // synchronize_rcu();
+        // kmem_cache_free(map->cache, old_entry);
+        call_rcu(&old_entry->rcu, pe_entry_free_rcu);
     }
 
 
@@ -209,8 +222,9 @@ static int pe_map_remove(struct pe_hashmap* map, long long key)
 
     if  (old_entry)
     {
-        synchronize_rcu();
-        kmem_cache_free(map->cache, old_entry);
+        // synchronize_rcu();
+        // kmem_cache_free(map->cache, old_entry);
+        call_rcu(&old_entry->rcu, pe_entry_free_rcu);
     }
 
     // if  (ret < 0)  pr_debug("remove failed, key: %lld\n", key);
@@ -267,6 +281,7 @@ static void pe_map_flush(struct pe_hashmap* map)
     }
 
     synchronize_rcu();
+    rcu_barrier();
 
     for (i = 0; i < map->buckets_num; i++)
     {
