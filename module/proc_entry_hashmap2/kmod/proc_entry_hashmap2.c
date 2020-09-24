@@ -388,7 +388,7 @@ static int __init proc_entry_hashmap2_init(void)
     if  (!example_entry) 
         goto err_example;
 
-    hello_map = pe_map_create(12);
+    hello_map = pe_map_create(16);
     if  (!hello_map)
         goto err_hello_map;
 
