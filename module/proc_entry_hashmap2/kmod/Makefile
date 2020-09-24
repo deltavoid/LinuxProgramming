@@ -14,7 +14,8 @@ $(MODULE).ko: $(MODULE).c
 	$(MAKE) -C $(KERNDIR) M=$(CURDIR) modules
 
 clean:
-	$(MAKE) -C $(KERNDIR) M=$(CURDIR) modules clean
+#	$(MAKE) -C $(KERNDIR) M=$(CURDIR) modules clean
+	-rm  *.o *.mod.o *.mod.c modules.order Module.symvers
 
 insmod: rmmod build
 	sudo insmod $(MODULE).ko

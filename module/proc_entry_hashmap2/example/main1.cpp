@@ -20,6 +20,7 @@ public:
     int id;
     std::unique_ptr<std::thread> thread;
     volatile bool running;
+    long long count;
 
     Worker(int id, const char *path)
         : id(id)
@@ -30,6 +31,8 @@ public:
             perror("open failed");
             // goto open_err;
         }
+
+        count = 0;
 
         running = true;
         thread = std::make_unique<std::thread>([this]() { this->run(); });
@@ -50,6 +53,7 @@ public:
         while (running)
         {
             // printf("rand: %lld\n", rand());
+            count++;
 
             struct hello_entry_param param = {
                 .operation = HELLO_ENTRY_INSERT,
@@ -57,31 +61,31 @@ public:
                 .value = (long long)rand(),
             };
 
-            // for (int i = 0; i < 3; i++)
             if (write(fd, &param, sizeof(param)) < 0)
             {
-                perror("insert error");
+                printf("insert error");
                 running = false;
             }
-           //  printf("insert key: %lld, value: %lld\n", param.key, param.value);
+            // printf("insert key: %lld, value: %lld\n", param.key, param.value);
+
 
             param.operation = HELLO_ENTRY_GET;
             param.value = 0;
-
-            // for (int i = 0; i < 3; i++)
             if (read(fd, &param, sizeof(param)) < 0)
             {
-                perror("get error");
+                // printf("get error, key: %lld\n", param.key);
                 // return -1;
             }
             // printf("read key: %lld, vlaue: %lld\n", param.key, param.value);
 
-            // param.operation = HELLO_ENTRY_REMOVE;
-            // if (write(fd, &param, sizeof(param)) < 0)
-            // {
-            //     perror("remove error");
-            //     // return -1;
-            // }
+ 
+            param.operation = HELLO_ENTRY_REMOVE;
+            if (write(fd, &param, sizeof(param)) < 0)
+            {
+                // perror("remove error");
+                // return -1;
+                // printf("remove key: %lld\n", param.key);    
+            }
             // printf("remove key: %lld\n", param.key);
 
             // usleep(1000);
@@ -162,6 +166,11 @@ int main(int argc, char **argv)
         workers[i] = std::make_unique<Worker>(i, path);
 
     sleep(sleep_time);
+
+    long long count = 0;
+    for (int i = 0; i < workers.size(); i++)
+        count += workers[i]->count;
+    printf("count: %lld\n", count);
 
     return 0;
 }

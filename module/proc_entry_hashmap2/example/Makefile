@@ -19,5 +19,5 @@ run_main: build
 	./main
 
 run_main1: build
-	./main1 8 120
+	./main1 4 20
 
