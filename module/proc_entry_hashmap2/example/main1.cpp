@@ -79,13 +79,13 @@ public:
             // printf("read key: %lld, vlaue: %lld\n", param.key, param.value);
 
  
-            // param.operation = HELLO_ENTRY_REMOVE;
-            // if (write(fd, &param, sizeof(param)) < 0)
-            // {
-            //     // perror("remove error");
-            //     // return -1;
-            //     printf("remove error, key: %lld\n", param.key);    
-            // }
+            param.operation = HELLO_ENTRY_REMOVE;
+            if (write(fd, &param, sizeof(param)) < 0)
+            {
+                // perror("remove error");
+                // return -1;
+                printf("remove error, key: %lld\n", param.key);    
+            }
             // printf("remove key: %lld\n", param.key);
 
             // usleep(1000);
