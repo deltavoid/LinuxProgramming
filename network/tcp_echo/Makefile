@@ -35,6 +35,9 @@ run_server_epoll_et: server_epoll_et
 run_server_epollout: server_epollout
 	./$< $(PORT)
 
+run_server_epollout_simple: server_epollout_simple
+	./$< $(PORT)
+
 run_client: client
 	./client 127.0.0.1 $(PORT) 2 5
 
@@ -74,6 +77,10 @@ server_epoll_et: server_epoll_et.cpp
 
 server_epollout: server_epollout.cpp
 	g++ -o $@ $^ -pthread
+
+server_epollout_simple: server_epollout_simple.cpp
+	g++ -o $@ $^ -pthread
+
 
 
 client: client.cpp util.h util.cpp
