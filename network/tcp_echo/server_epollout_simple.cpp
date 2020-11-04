@@ -63,13 +63,18 @@ public:
     int send_buf()
     {
         int tmp = 0;
+        int last_send_len = send_len;
+
         // while 
-        if  (send_len < reponse_size && (tmp = ::send(fd, reponse + send_len, std::min(reponse_size - send_len, 64), 0)) > 0)
+        if  
+            (send_len < reponse_size && (tmp = ::send(fd, reponse + send_len, std::min(reponse_size - send_len, 64), 0)) > 0)
         {
             send_len += tmp;
         }
 
-        usleep(1000);
+        
+        // printf("send_buf: %d\n", send_len - last_send_len);
+        // usleep(1000);
 
         if (send_len == reponse_size)
         {
