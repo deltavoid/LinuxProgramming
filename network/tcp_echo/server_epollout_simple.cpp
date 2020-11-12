@@ -64,7 +64,9 @@ public:
     {
         int tmp = 0;
         // while 
-        if  (send_len < reponse_size && (tmp = ::send(fd, reponse + send_len, std::min(reponse_size - send_len, 64), 0)) > 0)
+        if  
+            (send_len < reponse_size && (tmp = ::send(fd, reponse + send_len, reponse_size - send_len, 0)) > 0)
+        // if  (send_len < reponse_size && (tmp = ::send(fd, reponse + send_len, std::min(reponse_size - send_len, 64), 0)) > 0)
         {
             send_len += tmp;
         }
