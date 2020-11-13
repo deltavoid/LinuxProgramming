@@ -71,7 +71,7 @@ public:
             send_len += tmp;
         }
 
-        usleep(1000);
+        // usleep(1000);
 
         if (send_len == reponse_size)
         {
