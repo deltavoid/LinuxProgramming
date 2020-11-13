@@ -63,6 +63,8 @@ public:
     int send_buf()
     {
         int tmp = 0;
+        int last_send_len = send_len;
+
         // while 
         if  
             (send_len < reponse_size && (tmp = ::send(fd, reponse + send_len, reponse_size - send_len, 0)) > 0)
