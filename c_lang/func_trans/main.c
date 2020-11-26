@@ -16,11 +16,13 @@ typedef long (*func_t)(long arg0, long arg1, long arg2,
 long func1(long arg0)
 {
     printf("func1: %ld\n", arg0);
+    return 1;
 }
 
 long func2(int arg0, int arg1)
 {
     printf("func2: %ld, %ld\n", arg0, arg1);
+    return 2;
 }
 
 long func6(long arg0, int arg1, int arg2,
@@ -28,6 +30,7 @@ long func6(long arg0, int arg1, int arg2,
 {
     printf("func6: %ld, %ld, %ld, %ld, %ld, %ld\n",
         arg0, arg1, arg2, arg3, arg4, arg5);
+    return 6;
 }
 
 func_t func_array[4] = {
