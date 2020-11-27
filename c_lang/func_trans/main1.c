@@ -5,38 +5,6 @@
 
 
 
-
-
-
-
-typedef long (*func_t)(long arg0, long arg1, long arg2,
-        long arg3, long arg4, long arg5);
-
-
-
-
-
-struct hook_pt_regs {
-    long args[6];
-    long ret;
-    long blank;
-};
-
-
-typedef long (*post_func_t)(struct hook_pt_regs* ctx);
-
-// long hook_func(long arg0, long arg1, long arg2,
-//         long arg3, long arg4, long arg5)
-// {
-//     for (int i = 0; i < 4; i++)
-//         if  (func_array[i])
-//         {
-//             long ret = func_array[i](arg0, arg1, arg2, arg3, arg4, arg5);
-//             printf("hook_func: func_ret: %ld\n", ret);
-//         }
-// }
-
-
 typedef void* (*hello_func_t)(long arg0, long arg1, long arg2);
 
 hello_func_t hello_addr;
@@ -54,10 +22,26 @@ long hello_func1(long arg0, long arg1, long arg2)
 
 
 
+
+typedef long (*func_t)(long arg0, long arg1, long arg2,
+        long arg3, long arg4, long arg5);
+
+
+
+struct hook_pt_regs {
+    long args[6];
+    long ret;
+    long blank;
+};
+
+typedef long (*post_func_t)(struct hook_pt_regs* ctx);
+
+
+
+
 #define HOOK_ENABLE_POST_RUN 0x1
 
 struct hook_func_t {
-    // func_t func;
     unsigned long func;
     unsigned long flag;
 };
@@ -66,6 +50,8 @@ struct hook_t {
     struct hook_func_t prev_func[8];
     struct hook_func_t post_func[8];
 };
+
+
 
 
 struct hook_t hello_hook;
@@ -119,7 +105,7 @@ int hello_register_hook(unsigned long func_addr, unsigned long flag, int index)
             .flag = flag
         };
         hello_hook.prev_func[7] = origin_func_hook;
-        hello_addr = hello_hook_func;
+        *(unsigned long*)&hello_addr = (unsigned long)hello_hook_func;
  
         hello_hook_inited = true;
     }
@@ -133,14 +119,12 @@ int hello_register_hook(unsigned long func_addr, unsigned long flag, int index)
     };
 
     if  (index < 8)
-    {   // prev_func
-
+    {   
         hello_hook.prev_func[index] = func_hook;
     }
     else
     {
         index -= 8;
-
         hello_hook.post_func[index] = func_hook;
     }
 
@@ -152,16 +136,13 @@ int hello_register_hook(unsigned long func_addr, unsigned long flag, int index)
 
 int main()
 {
-    // hook_func(1, 2, 3, 4, 5, 6);
-
-    hello_addr = hello_func;
+    *(unsigned long*)&hello_addr = (unsigned long)hello_func;
     long ret = hello_addr(1, 2, 3);
     printf("ret: %ld\n", ret);
 
     hello_register_hook((unsigned long)hello_func1, 0, 0);
     long ret1 = hello_addr(1, 2, 3);
     printf("ret1: %ld\n", ret1);
-
 
 
    return 0;
