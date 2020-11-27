@@ -5,7 +5,7 @@
 
 
 
-typedef void* (*hello_func_t)(long arg0, long arg1, long arg2);
+typedef long (*hello_func_t)(long arg0, long arg1, long arg2);
 
 hello_func_t hello_addr;
 
@@ -101,8 +101,8 @@ int hello_register_hook(unsigned long func_addr, unsigned long flag, int index)
     if  (!hello_hook_inited)
     {
         struct hook_func_t origin_func_hook = {
-            .func = func_addr,
-            .flag = flag
+            .func = (unsigned long)hello_func,
+            .flag = 0
         };
         hello_hook.prev_func[7] = origin_func_hook;
         *(unsigned long*)&hello_addr = (unsigned long)hello_hook_func;
@@ -140,7 +140,7 @@ int main()
     long ret = hello_addr(1, 2, 3);
     printf("ret: %ld\n", ret);
 
-    hello_register_hook((unsigned long)hello_func1, 0, 0);
+    hello_register_hook((unsigned long)hello_func1, 1, 0);
     long ret1 = hello_addr(1, 2, 3);
     printf("ret1: %ld\n", ret1);
 
