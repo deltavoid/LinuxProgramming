@@ -47,7 +47,15 @@ struct hook_func_t {
 
 struct hook_t {
     struct hook_func_t prev_func[8];
-    struct hook_func_t post_func[8];
+    // struct hook_func_t post_func[8];
+    struct hook_func_t post_func[7];
+    union {
+        struct hook_func_t blank;
+        struct {
+            int spinlock;
+            int flag;
+        }info;
+    };
 };
 
 
