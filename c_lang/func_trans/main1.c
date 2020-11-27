@@ -95,7 +95,7 @@ long hello_hook_func(long arg0, long arg1, long arg2,
 
 
 // now only for hello_hook
-int hello_register_hook(unsigned long func_addr, unsigned long flag, int index)
+int hello_register_hook(unsigned long func_addr, unsigned long flag, int type, int index)
 {
     if  (!hello_hook_inited)
     {
@@ -117,15 +117,16 @@ int hello_register_hook(unsigned long func_addr, unsigned long flag, int index)
         .flag = flag
     };
 
-    if  (index < 8)
+    if  (type == 0)
     {   
         hello_hook.prev_func[index] = func_hook;
     }
-    else
+    else if  (type == 1)
     {
-        index -= 8;
         hello_hook.post_func[index] = func_hook;
     }
+    else 
+        return -1;
 
     return 0;
 }
@@ -152,8 +153,8 @@ int main()
     long ret = hello_addr(1, 2, 3);
     printf("ret: %ld\n", ret);
 
-    hello_register_hook((unsigned long)hello_func1, 0, 0);
-    hello_register_hook((unsigned long)hello_post_func1, 1, 8);
+    hello_register_hook((unsigned long)hello_func1, 0, 0, 0);
+    hello_register_hook((unsigned long)hello_post_func1, 1, 1, 0);
     long ret1 = hello_addr(1, 2, 3);
     printf("ret1: %ld\n", ret1);
 
