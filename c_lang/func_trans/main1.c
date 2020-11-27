@@ -11,14 +11,13 @@ hello_func_t hello_addr;
 
 long hello_func(long arg0, long arg1, long arg2)
 {
+    printf("hello_func: arg0: %ld, arg1: %ld, arg2: %ld\n",
+            arg0, arg1, arg2);
+    
     return (arg0 + arg1 + arg2);
 }
 
 
-long hello_func1(long arg0, long arg1, long arg2)
-{
-    return (arg0 + arg1 + arg2) + 1;
-}
 
 
 
@@ -132,7 +131,20 @@ int hello_register_hook(unsigned long func_addr, unsigned long flag, int index)
 }
 
 
+long hello_func1(long arg0, long arg1, long arg2)
+{
+    printf("hello_func1: arg0: %ld, arg1, %ld, arg2: %ld\n", 
+            arg0, arg1, arg2);
 
+    return (arg0 + arg1 + arg2) + 1;
+}
+
+
+long hello_post_func1(struct hook_pt_regs* ctx)
+{
+    printf("hellp_post_func1: ret: %ld\n", ctx->ret);
+    return 0;
+}
 
 int main()
 {
@@ -140,7 +152,8 @@ int main()
     long ret = hello_addr(1, 2, 3);
     printf("ret: %ld\n", ret);
 
-    hello_register_hook((unsigned long)hello_func1, 1, 0);
+    hello_register_hook((unsigned long)hello_func1, 0, 0);
+    hello_register_hook((unsigned long)hello_post_func1, 1, 8);
     long ret1 = hello_addr(1, 2, 3);
     printf("ret1: %ld\n", ret1);
 
