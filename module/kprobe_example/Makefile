@@ -17,7 +17,7 @@ clean:
 	rm -f *.ko *.o  *.mod *.mod.o *.mod.c *.order *.symvers .$(MODULE).*.cmd
 
 insmod: rmmod build
-	sudo insmod $(MODULE).ko
+	sudo insmod $(MODULE).ko symbol=inet_accept
 
 rmmod:
 	-sudo rmmod $(MODULE)
