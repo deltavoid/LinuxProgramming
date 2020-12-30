@@ -8,19 +8,19 @@
 #include <linux/version.h>
 
 
-static int __init hello_init(void)
+static int __init mutex_use_init(void)
 {
-    pr_info("hello inserted\n");
+    pr_info("mutex_use inserted\n");
     return 0;
 }
 
-static void __exit hello_exit(void)
+static void __exit mutex_use_exit(void)
 {
-    pr_info("hello removed\n");
+    pr_info("mutex_use removed\n");
     pr_debug("-------------------------------------------------\n");
 }
 
 
-module_init(hello_init);
-module_exit(hello_exit);
+module_init(mutex_use_init);
+module_exit(mutex_use_exit);
 MODULE_LICENSE("GPL");
