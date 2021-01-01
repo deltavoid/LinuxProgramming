@@ -67,27 +67,12 @@ static int handler_fault(struct kprobe *p, struct pt_regs *regs, int trapnr)
     return 0;
 }
 
-
-// module init ---------------------------------------------------------------
+// preempt_count_display -----------------------------------------------------
 
 
 spinlock_t example_lock;
-
-static int __init preempt_count_display_init(void)
+static void preempt_count_test(void)
 {
-    // int ret;
-    // kp.pre_handler = handler_pre;
-    // // kp.post_handler = handler_post;
-    // kp.post_handler = NULL;
-    // kp.fault_handler = handler_fault;
-
-    // ret = register_kprobe(&kp);
-    // if (ret < 0) {
-    //     pr_err("register_kprobe failed, returned %d\n", ret);
-    //     return ret;
-    // }
-    // pr_info("Planted kprobe at %p\n", kp.addr);
-
     pr_debug("module_init\n");
     preempt_count_display();
 
@@ -108,6 +93,25 @@ static int __init preempt_count_display_init(void)
 
     local_bh_enable();
 
+    local_bh_disable();
+    local_bh_disable();
+
+    pr_debug("local_bh_disable * 2\n");
+    preempt_count_display();
+
+    local_bh_enable();
+    local_bh_enable();
+
+    local_bh_disable();
+    local_bh_disable();
+    local_bh_disable();
+
+    pr_debug("local_bh_disable * 3\n");
+    preempt_count_display();
+
+    local_bh_enable();
+    local_bh_enable();
+    local_bh_enable();
 
     spin_lock_bh(&example_lock);
 
@@ -116,6 +120,39 @@ static int __init preempt_count_display_init(void)
 
     spin_unlock_bh(&example_lock);
 
+
+    preempt_disable();
+
+    pr_debug("preempt_disable\n");
+    preempt_count_display();
+
+    preempt_enable();
+
+
+}
+
+
+// module init ---------------------------------------------------------------
+
+
+
+
+static int __init preempt_count_display_init(void)
+{
+    // int ret;
+    // kp.pre_handler = handler_pre;
+    // // kp.post_handler = handler_post;
+    // kp.post_handler = NULL;
+    // kp.fault_handler = handler_fault;
+
+    // ret = register_kprobe(&kp);
+    // if (ret < 0) {
+    //     pr_err("register_kprobe failed, returned %d\n", ret);
+    //     return ret;
+    // }
+    // pr_info("Planted kprobe at %p\n", kp.addr);
+
+    preempt_count_test();
     
 
     return 0;
