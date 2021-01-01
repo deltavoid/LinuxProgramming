@@ -19,7 +19,7 @@ static void preempt_count_display(void)
 {
     unsigned preempt_cnt = preempt_count();
     // if  (preempt_cnt)
-        pr_debug("preempt_count: %x\n", preempt_cnt);
+        pr_debug("preempt_count: 0x%08x\n", preempt_cnt);
 }
 
 
@@ -41,10 +41,11 @@ static unsigned long cnt = 0;
 /* kprobe pre_handler: called just before the probed instruction is executed */
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
-    if  (++cnt % 1000 == 0)
+    if  (++cnt % 10 == 0)
     {
-        pr_debug("%s --------------------------------------------------------------\n", p->symbol_name);
-        pr_debug("cnt: %ld\n", cnt);
+        pr_debug("%s cnt: %ld --------------------------------------------------------------\n", 
+                p->symbol_name, cnt);
+        // pr_debug("cnt: %ld\n", cnt);
         preempt_count_display();
         
         dump_stack();

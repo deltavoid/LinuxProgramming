@@ -17,7 +17,7 @@ clean:
 	rm -f *.ko *.o  *.mod *.mod.o *.mod.c *.order *.symvers .$(MODULE).*.cmd
 
 insmod: rmmod build
-	sudo insmod $(MODULE).ko symbol=__do_softirq
+	sudo insmod $(MODULE).ko symbol=net_rx_action
 
 rmmod:
 	-sudo rmmod $(MODULE)
