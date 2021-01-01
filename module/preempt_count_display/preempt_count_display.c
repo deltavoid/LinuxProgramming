@@ -34,8 +34,8 @@ static void current_display(void)
     pr_debug("thread status: %lx\n", thread_p->status);
 
     // comm should use get_task_comm
-    pr_debug("task tid/pid: %d, pid/tgid: %d, comm: %s\n", 
-            task_p->pid, task_p->tgid, task_p->comm);
+    pr_debug("cpu_id: %d, task tid/pid: %d, pid/tgid: %d, comm: %s\n", 
+            smp_processor_id(), task_p->pid, task_p->tgid, task_p->comm);
 
 
 }
