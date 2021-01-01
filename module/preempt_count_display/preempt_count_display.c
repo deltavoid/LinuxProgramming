@@ -36,6 +36,14 @@ static struct kprobe kp = {
     .symbol_name	= symbol,
 };
 
+/* for any context, information need to know
+ * cpu, tid, pid, command name
+ * preempt_count: thread context, irq context, hard_irq, soft_irq, preempt_disable, 
+ * need_resched
+ * lock
+ */
+
+
 static unsigned long cnt = 0;
 
 /* kprobe pre_handler: called just before the probed instruction is executed */
