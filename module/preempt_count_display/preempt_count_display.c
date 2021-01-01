@@ -22,6 +22,13 @@ static void preempt_count_display(void)
         pr_debug("preempt_count: 0x%08x\n", preempt_cnt);
 }
 
+static void current_display(void)
+{
+    unsigned long thread_p = current_thread_info();
+    unsigned long task_p = current;
+
+    pr_debug("thread_p: %px, task_p: %px\n", thread_p, task_p);
+}
 
 // kprobe -----------------------------------------------------------
 
@@ -160,7 +167,9 @@ static int __init preempt_count_display_init(void)
     // }
     // pr_info("Planted kprobe at %p\n", kp.addr);
 
-    preempt_count_test();
+    current_display();
+
+    // preempt_count_test();
     
 
     return 0;
