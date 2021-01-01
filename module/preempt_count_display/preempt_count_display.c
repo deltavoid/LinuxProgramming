@@ -32,6 +32,8 @@ static void current_display(void)
     pr_debug("thread flags: %lx\n", thread_p->flags);
     pr_debug("thread status: %lx\n", thread_p->status);
 
+    pr_debug("task tid/pid: %d, pid/tgid: %d\n", task_p->pid, task_p->tgid);
+
 
 }
 
