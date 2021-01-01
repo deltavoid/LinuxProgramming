@@ -70,27 +70,66 @@ static int handler_fault(struct kprobe *p, struct pt_regs *regs, int trapnr)
 
 // module init ---------------------------------------------------------------
 
+
+spinlock_t example_lock;
+
 static int __init preempt_count_display_init(void)
 {
-    int ret;
-    kp.pre_handler = handler_pre;
-    // kp.post_handler = handler_post;
-    kp.post_handler = NULL;
-    kp.fault_handler = handler_fault;
+    // int ret;
+    // kp.pre_handler = handler_pre;
+    // // kp.post_handler = handler_post;
+    // kp.post_handler = NULL;
+    // kp.fault_handler = handler_fault;
 
-    ret = register_kprobe(&kp);
-    if (ret < 0) {
-        pr_err("register_kprobe failed, returned %d\n", ret);
-        return ret;
-    }
-    pr_info("Planted kprobe at %p\n", kp.addr);
+    // ret = register_kprobe(&kp);
+    // if (ret < 0) {
+    //     pr_err("register_kprobe failed, returned %d\n", ret);
+    //     return ret;
+    // }
+    // pr_info("Planted kprobe at %p\n", kp.addr);
+
+    pr_debug("module_init\n");
+    preempt_count_display();
+
+
+
+    spin_lock(&example_lock);
+
+    pr_debug("spin_lock\n");
+    preempt_count_display();
+
+    spin_unlock(&example_lock);
+
+
+    local_bh_disable();
+
+    pr_debug("local_bh_disable\n");
+    preempt_count_display();
+
+    local_bh_enable();
+
+
+    spin_lock_bh(&example_lock);
+
+    pr_debug("spin_lock_bh\n");
+    preempt_count_display();
+
+    spin_unlock_bh(&example_lock);
+
+    
+
     return 0;
 }
 
 static void __exit preempt_count_display_exit(void)
 {
-    unregister_kprobe(&kp);
+    // unregister_kprobe(&kp);
+
+    preempt_count_display();
+
+
     pr_info("kprobe at %p unregistered\n", kp.addr);
+    pr_debug("----------------------------------------------\n");
 }
 
 module_init(preempt_count_display_init)
