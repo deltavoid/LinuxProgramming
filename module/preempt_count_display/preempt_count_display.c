@@ -1,114 +1,58 @@
 
 
-// #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
-// #include <linux/init.h>
-// #include <linux/module.h>
-// #include <linux/kernel.h>
-// #include <linux/version.h>
-
-
-// static int __init hello_init(void)
-// {
-//     pr_info("hello inserted\n");
-//     return 0;
-// }
-
-// static void __exit hello_exit(void)
-// {
-//     pr_info("hello removed\n");
-//     pr_debug("-------------------------------------------------\n");
-// }
-
-
-// module_init(hello_init);
-// module_exit(hello_exit);
-// MODULE_LICENSE("GPL");
-
-// SPDX-License-Identifier: GPL-2.0-only
-/*
- * NOTE: This example is works on x86 and powerpc.
- * Here's a sample kernel module showing the use of kprobes to dump a
- * stack trace and selected registers when _do_fork() is called.
- *
- * For more information on theory of operation of kprobes, see
- * Documentation/kprobes.txt
- *
- * You will see the trace data in /var/log/messages and on the console
- * whenever _do_fork() is invoked to create a new process.
- */
-
-#include <linux/kernel.h>
+#include <linux/init.h>
 #include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/version.h>
+
 #include <linux/kprobes.h>
+
+
+
+// preempt_count_display --------------------------------------------
+
+
+
+static void preempt_count_display(void)
+{
+    unsigned preempt_cnt = preempt_count();
+    // if  (preempt_cnt)
+        pr_debug("preempt_count: %x\n", preempt_cnt);
+}
+
+
+// kprobe -----------------------------------------------------------
 
 #define MAX_SYMBOL_LEN	64
 static char symbol[MAX_SYMBOL_LEN] = "_do_fork";
 module_param_string(symbol, symbol, sizeof(symbol), 0644);
+
+
 
 /* For each probe you need to allocate a kprobe structure */
 static struct kprobe kp = {
     .symbol_name	= symbol,
 };
 
+static unsigned long cnt = 0;
+
 /* kprobe pre_handler: called just before the probed instruction is executed */
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
-// #ifdef CONFIG_X86
-//     pr_info("<%s> pre_handler: p->addr = 0x%p, ip = %lx, flags = 0x%lx\n",
-//         p->symbol_name, p->addr, regs->ip, regs->flags);
-// #endif
-// #ifdef CONFIG_PPC
-//     pr_info("<%s> pre_handler: p->addr = 0x%p, nip = 0x%lx, msr = 0x%lx\n",
-//         p->symbol_name, p->addr, regs->nip, regs->msr);
-// #endif
-// #ifdef CONFIG_MIPS
-//     pr_info("<%s> pre_handler: p->addr = 0x%p, epc = 0x%lx, status = 0x%lx\n",
-//         p->symbol_name, p->addr, regs->cp0_epc, regs->cp0_status);
-// #endif
-// #ifdef CONFIG_ARM64
-//     pr_info("<%s> pre_handler: p->addr = 0x%p, pc = 0x%lx,"
-//             " pstate = 0x%lx\n",
-//         p->symbol_name, p->addr, (long)regs->pc, (long)regs->pstate);
-// #endif
-// #ifdef CONFIG_S390
-//     pr_info("<%s> pre_handler: p->addr, 0x%p, ip = 0x%lx, flags = 0x%lx\n",
-//         p->symbol_name, p->addr, regs->psw.addr, regs->flags);
-// #endif
+    if  (++cnt % 1000 == 0)
+    {
+        pr_debug("%s --------------------------------------------------------------\n", p->symbol_name);
+        pr_debug("cnt: %ld\n", cnt);
+        preempt_count_display();
+        
+        dump_stack();
+    }
+    
 
-    unsigned preempt_cnt = preempt_count();
-    if  (preempt_cnt)
-        pr_debug("preempt_count: %x\n", preempt_cnt);
-
-    /* A dump_stack() here will give a stack backtrace */
     return 0;
 }
-
-// /* kprobe post_handler: called after the probed instruction is executed */
-// static void handler_post(struct kprobe *p, struct pt_regs *regs,
-//                 unsigned long flags)
-// {
-// #ifdef CONFIG_X86
-//     pr_info("<%s> post_handler: p->addr = 0x%p, flags = 0x%lx\n",
-//         p->symbol_name, p->addr, regs->flags);
-// #endif
-// #ifdef CONFIG_PPC
-//     pr_info("<%s> post_handler: p->addr = 0x%p, msr = 0x%lx\n",
-//         p->symbol_name, p->addr, regs->msr);
-// #endif
-// #ifdef CONFIG_MIPS
-//     pr_info("<%s> post_handler: p->addr = 0x%p, status = 0x%lx\n",
-//         p->symbol_name, p->addr, regs->cp0_status);
-// #endif
-// #ifdef CONFIG_ARM64
-//     pr_info("<%s> post_handler: p->addr = 0x%p, pstate = 0x%lx\n",
-//         p->symbol_name, p->addr, (long)regs->pstate);
-// #endif
-// #ifdef CONFIG_S390
-//     pr_info("<%s> pre_handler: p->addr, 0x%p, flags = 0x%lx\n",
-//         p->symbol_name, p->addr, regs->flags);
-// #endif
-// }
 
 /*
  * fault_handler: this is called if an exception is generated for any
@@ -121,6 +65,9 @@ static int handler_fault(struct kprobe *p, struct pt_regs *regs, int trapnr)
     /* Return 0 because we don't handle the fault. */
     return 0;
 }
+
+
+// module init ---------------------------------------------------------------
 
 static int __init preempt_count_display_init(void)
 {
