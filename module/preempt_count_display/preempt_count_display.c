@@ -24,10 +24,14 @@ static void preempt_count_display(void)
 
 static void current_display(void)
 {
-    unsigned long thread_p = current_thread_info();
-    unsigned long task_p = current;
+    struct thread_info* thread_p = current_thread_info();
+    struct task_struct* task_p = current;
 
     pr_debug("thread_p: %px, task_p: %px\n", thread_p, task_p);
+    pr_debug("thread flags: %lx\n", thread_p->flags);
+    pr_debug("thread status: %lx\n", thread_p->status);
+
+
 }
 
 // kprobe -----------------------------------------------------------
