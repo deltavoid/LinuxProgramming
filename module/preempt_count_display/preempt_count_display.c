@@ -122,7 +122,7 @@ static int handler_fault(struct kprobe *p, struct pt_regs *regs, int trapnr)
     return 0;
 }
 
-static int __init kprobe_init(void)
+static int __init preempt_count_display_init(void)
 {
     int ret;
     kp.pre_handler = handler_pre;
@@ -139,12 +139,12 @@ static int __init kprobe_init(void)
     return 0;
 }
 
-static void __exit kprobe_exit(void)
+static void __exit preempt_count_display_exit(void)
 {
     unregister_kprobe(&kp);
     pr_info("kprobe at %p unregistered\n", kp.addr);
 }
 
-module_init(kprobe_init)
-module_exit(kprobe_exit)
+module_init(preempt_count_display_init)
+module_exit(preempt_count_display_exit)
 MODULE_LICENSE("GPL");
