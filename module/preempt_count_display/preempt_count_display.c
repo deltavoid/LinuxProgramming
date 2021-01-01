@@ -19,7 +19,8 @@ static void preempt_count_display(void)
 {
     unsigned preempt_cnt = preempt_count();
     // if  (preempt_cnt)
-        pr_debug("preempt_count: 0x%08x\n", preempt_cnt);
+    pr_debug("preempt_count: 0x%08x\n", preempt_cnt);
+    pr_debug("test_preempt_need_resched: %d\n", test_preempt_need_resched());
 }
 
 static void current_display(void)
@@ -173,6 +174,7 @@ static int __init preempt_count_display_init(void)
 
     current_display();
 
+    preempt_count_display();
     // preempt_count_test();
     
 
