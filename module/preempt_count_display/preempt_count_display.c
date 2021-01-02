@@ -184,7 +184,7 @@ static int __init preempt_count_display_init(void)
     current_display();
 
     preempt_count_display();
-    // preempt_count_test();
+    preempt_count_test();
     
 
     return 0;
