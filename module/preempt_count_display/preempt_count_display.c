@@ -30,12 +30,16 @@ static void current_display(void)
 
     pr_debug("thread_p: %px, task_p: %px\n", thread_p, task_p);
     
-    pr_debug("thread flags: %lx\n", thread_p->flags);
-    pr_debug("thread status: %lx\n", thread_p->status);
-
+    
     // comm should use get_task_comm
     pr_debug("cpu_id: %d, task tid/pid: %d, pid/tgid: %d, comm: %s\n", 
             smp_processor_id(), task_p->pid, task_p->tgid, task_p->comm);
+
+    pr_debug("thread flags: %lx\n", thread_p->flags);
+    pr_debug("thread status: %lx\n", thread_p->status);
+
+    pr_debug("task flags: %lx\n", task_p->flags);
+    pr_debug("task state: %lx\n", task_p->state);
 
 
 }
