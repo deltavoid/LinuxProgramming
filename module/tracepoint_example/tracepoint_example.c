@@ -10,12 +10,37 @@
 #include <linux/tracepoint.h>
 #include <trace/events/sched.h>
 
+
+// preempt_count display ------------------------------------------
+
+static void preempt_count_display(void)
+{
+    struct task_struct* task_p = current;
+
+    preempt_disable();
+    // comm should use get_task_comm
+    pr_debug("cpu_id: %d, task tid/pid: %d, pid/tgid: %d, comm: %s\n", 
+            smp_processor_id(), task_p->pid, task_p->tgid, task_p->comm);
+    preempt_enable();
+
+    pr_debug("preempt_count: 0x%08x, test_preempt_need_resched: %d\n", preempt_count(), test_preempt_need_resched());
+    // pr_debug("test_preempt_need_resched: %d\n", test_preempt_need_resched());
+}
+
 // probe sched ----------------------------------------------------
 
 
+u64 __percpu * probe_sched_wakeup_count;
+
 static void probe_sched_wakeup(void *priv, struct task_struct *p)
 {
-    pr_debug("probe_sched_wakeup: wakeup %s\n", p->comm);
+    u64* count = this_cpu_ptr(probe_sched_wakeup_count);
+    
+    if  (++*count % 1000 == 0)
+    {
+        pr_debug("probe_sched_wakeup: wakeup %s\n", p->comm);
+        preempt_count_display();
+    }
 }
 
 // tracepoint_probe_context ----------------------------------------
@@ -116,6 +141,8 @@ static int __init tracepoint_init(void)
 {
     pr_debug("tracepoint_init begin\n");
 
+    probe_sched_wakeup_count = alloc_percpu(u64);
+
     if  (tracepoint_probe_context_find_tracepoints(&sched_probes) < 0)
     {   pr_warn("find tracepoints failed\n");
         return -1;
@@ -137,6 +164,7 @@ static void __exit tracepoint_exit(void)
 
     tracepoint_probe_context_unregister_probes(&sched_probes);
 
+    free_percpu(probe_sched_wakeup_count);
 
     pr_debug("tracepoint_exit end\n");
     pr_debug("------------------------------------------------------------------\n");
