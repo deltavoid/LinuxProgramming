@@ -40,6 +40,14 @@ static void probe_sched_wakeup(void *priv, struct task_struct *p)
     {
         pr_debug("probe_sched_wakeup: wakeup %s\n", p->comm);
         preempt_count_display();
+
+        // if  (in_task())
+        // {
+        //     preempt_disable();
+        //     if  (smp_processor_id() == 0)
+        //         dump_stack();
+        //     preempt_enable();
+        // }
     }
 }
 
