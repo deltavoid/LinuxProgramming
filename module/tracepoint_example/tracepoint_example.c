@@ -51,6 +51,22 @@ static void probe_sched_wakeup(void *priv, struct task_struct *p)
     }
 }
 
+static void probe_tcp_recv_length(struct sock *sk, int length, int error, int flags)
+{
+    pr_debug("probe_tcp_recv_length\n");
+    preempt_count_display();
+
+    
+        if  (in_task())
+        {
+            preempt_disable();
+            if  (smp_processor_id() == 0)
+                dump_stack();
+            preempt_enable();
+        }
+    
+}
+
 // tracepoint_probe_context ----------------------------------------
 
 
@@ -134,11 +150,16 @@ static void tracepoint_probe_context_unregister_probes(struct tracepoint_probe_c
 
 static struct tracepoint_probe_context sched_probes = {
     .entries = {
+        // {
+        //     .name = "sched_wakeup",
+        //     .probe = probe_sched_wakeup,
+        //     .priv = NULL,
+        // },
         {
-            .name = "sched_wakeup",
-            .probe = probe_sched_wakeup,
+            .name = "tcp_recv_length",
+            .probe = probe_tcp_recv_length,
             .priv = NULL,
-        }
+        },
     },
     .init_num = 1
 };
