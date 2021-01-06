@@ -83,6 +83,13 @@ static void probe_tcp_probe(struct sock *sk, struct sk_buff *skb)
 
 }
 
+static void probe_local_timer_entry(int id)
+{
+    pr_debug("probe_local_timer_entry\n");
+    preempt_count_display();
+
+}
+
 // tracepoint_probe_context ----------------------------------------
 
 
@@ -176,9 +183,14 @@ static struct tracepoint_probe_context sched_probes = {
         //     .probe = probe_tcp_recv_length,
         //     .priv = NULL,
         // },
+        // {
+        //     .name = "tcp_probe",
+        //     .probe = probe_tcp_probe,
+        //     .priv = NULL,
+        // },
         {
-            .name = "tcp_probe",
-            .probe = probe_tcp_probe,
+            .name = "local_timer_entry",
+            .probe = probe_local_timer_entry,
             .priv = NULL,
         },
     },
