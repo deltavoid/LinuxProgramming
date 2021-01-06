@@ -42,6 +42,7 @@ static void timer_example_expire__(struct timer_example* data, struct timer_list
 {
     pr_debug("timer_example_expire__, cnt: %lld\n", data->cnt);
     preempt_count_display();
+    dump_stack();
 
     if  (++data->cnt == 10)
     {   pr_debug("del_timer\n");
@@ -51,7 +52,7 @@ static void timer_example_expire__(struct timer_example* data, struct timer_list
     {   pr_debug("jeffies: %ld\n", jiffies);
         mod_timer(timer, jiffies + timer_example_timeout * HZ);
     }
-    pr_debug("");
+    printk("\n");
 }
 
 static void timer_example_expire(struct timer_list *timer)
