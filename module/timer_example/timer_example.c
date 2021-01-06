@@ -12,25 +12,25 @@
 
 // module init ----------------------------------------------------------
 
-static int __init hello_init(void)
+static int __init timer_example_init(void)
 {
-    pr_info("hello_init begin\n");
+    pr_info("timer_example_init begin\n");
 
 
-    pr_info("hello_init end\n");
+    pr_info("timer_example_init end\n");
     return 0;
 }
 
-static void __exit hello_exit(void)
+static void __exit timer_example_exit(void)
 {
-    pr_info("hello_exit begin\n");
+    pr_info("timer_example_exit begin\n");
 
 
-    pr_info("hello_exit end\n");
+    pr_info("timer_example_exit end\n");
     pr_debug("-------------------------------------------------\n");
 }
 
 
-module_init(hello_init);
-module_exit(hello_exit);
+module_init(timer_example_init);
+module_exit(timer_example_exit);
 MODULE_LICENSE("GPL");
