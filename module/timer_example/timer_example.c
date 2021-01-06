@@ -44,12 +44,14 @@ static void timer_example_expire__(struct timer_example* data, struct timer_list
     preempt_count_display();
 
     if  (++data->cnt == 10)
-    {   del_timer(timer);
+    {   pr_debug("del_timer\n");
+        del_timer(timer);
     }
     else
     {   pr_debug("jeffies: %ld\n", jiffies);
         mod_timer(timer, jiffies + timer_example_timeout * HZ);
     }
+    pr_debug("");
 }
 
 static void timer_example_expire(struct timer_list *timer)
@@ -58,38 +60,47 @@ static void timer_example_expire(struct timer_list *timer)
     timer_example_expire__(data, timer);
 }
 
-static void timer_example_init(struct timer_example* data)
+static int timer_example_init(struct timer_example* data)
 {
+    data->cnt = 0;
     timer_setup(&data->timer, timer_example_expire, 0);
     mod_timer(&data->timer, jiffies + timer_example_timeout * HZ);
+    return 0;
 }
 
 static void timer_example_exit(struct timer_example* data)
 {
     pr_debug("timer_example_exit, timer_pending: %d\n", timer_pending(&data->timer));
     if  (timer_pending(&data->timer))
-    {   del_timer(&data->timer);
+    {   pr_debug("timer_example_exit, del_timer\n");
+        del_timer(&data->timer);
     }
 }
 
 
 // module init ----------------------------------------------------------
 
+struct timer_example example;
+
 static int __init timer_example_module_init(void)
 {
-    pr_info("timer_example_init begin\n");
+    pr_info("timer_example_module_init begin\n");
 
+    preempt_count_display();
+    timer_example_init(&example);
 
-    pr_info("timer_example_init end\n");
+    pr_info("timer_example_module_init end\n");
     return 0;
 }
 
 static void __exit timer_example_module_exit(void)
 {
-    pr_info("timer_example_exit begin\n");
+    pr_info("timer_example_module_exit begin\n");
 
+    preempt_count_display();
+    timer_example_exit(&example);
 
-    pr_info("timer_example_exit end\n");
+    pr_info("timer_example_module_exit end\n");
     pr_debug("-------------------------------------------------\n");
 }
 
