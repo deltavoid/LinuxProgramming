@@ -85,8 +85,14 @@ static void probe_tcp_probe(struct sock *sk, struct sk_buff *skb)
 
 static void probe_local_timer_entry(int id)
 {
-    pr_debug("probe_local_timer_entry\n");
-    preempt_count_display();
+    if  (smp_processor_id() == 0)
+    {
+
+        pr_debug("probe_local_timer_entry\n");
+        preempt_count_display();
+
+        dump_stack();
+    }
 
 }
 
