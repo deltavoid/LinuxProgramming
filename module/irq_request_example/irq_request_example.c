@@ -54,14 +54,14 @@ static void test_irq(void)
 
 static int __init irq_request_init(void)
 {
-    int i;
+    // int i;
     pr_info("irq_request_init begin\n");
 
-
-    // if  (request_irq(example_irq_line, example_interrupt, IRQF_SHARED, "test", &count) < 0)
-    // {   pr_warn("request_irq failed\n");
-    //     return -1;
-    // }
+    irq_line = 3;
+    if  (request_irq(irq_line, example_interrupt, IRQF_SHARED, "test", &count) < 0)
+    {   pr_warn("request_irq failed\n");
+        return -1;
+    }
     // irq_line = -1;
     // for (i = 0; i < 100; i++)
     // {
@@ -75,7 +75,7 @@ static int __init irq_request_init(void)
     // if  (irq_line < 0)
     //     return -1;
 
-    test_irq();
+    // test_irq();
 
     pr_info("irq_request_init end\n");
     return 0;
@@ -85,7 +85,7 @@ static void __exit irq_request_exit(void)
 {
     pr_info("irq_request_exit begin\n");
 
-    // free_irq(irq_line, &count);
+    free_irq(irq_line, &count);
 
 
     pr_info("irq_request_exit end\n");
