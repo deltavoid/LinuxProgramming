@@ -88,10 +88,12 @@ static void probe_local_timer_entry(int id)
     if  (smp_processor_id() == 0)
     {
 
-        pr_debug("probe_local_timer_entry\n");
+        pr_debug("probe_local_timer_entry, jiffies: %ld\n", jiffies);
         preempt_count_display();
 
         dump_stack();
+
+        printk("\n");
     }
 
 }
