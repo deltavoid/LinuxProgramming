@@ -67,6 +67,22 @@ static void probe_tcp_recv_length(struct sock *sk, int length, int error, int fl
     
 }
 
+static void probe_tcp_probe(struct sock *sk, struct sk_buff *skb)
+{
+    pr_debug("probe_tcp_probe\n");
+    preempt_count_display();
+
+    
+        // if  (in_task())
+        {
+            preempt_disable();
+            if  (smp_processor_id() == 0)
+                dump_stack();
+            preempt_enable();
+        }
+
+}
+
 // tracepoint_probe_context ----------------------------------------
 
 
@@ -155,9 +171,14 @@ static struct tracepoint_probe_context sched_probes = {
         //     .probe = probe_sched_wakeup,
         //     .priv = NULL,
         // },
+        // {
+        //     .name = "tcp_recv_length",
+        //     .probe = probe_tcp_recv_length,
+        //     .priv = NULL,
+        // },
         {
-            .name = "tcp_recv_length",
-            .probe = probe_tcp_recv_length,
+            .name = "tcp_probe",
+            .probe = probe_tcp_probe,
             .priv = NULL,
         },
     },
