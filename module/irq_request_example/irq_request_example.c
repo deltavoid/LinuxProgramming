@@ -7,15 +7,55 @@
 #include <linux/kernel.h>
 #include <linux/version.h>
 
+#include <linux/interrupt.h>
 
+
+// gaea nic input irq line on cpu0
+#define example_irq_line 33
+
+
+static irqreturn_t example_interrupt(int irq, void *dev_data)
+{
+    uint64_t* cnt = dev_data;
+
+    // if  (++*cnt % 100 == 0)
+    {
+        pr_debug("example_interrupt, irq: %d, cnt: %lld\n", irq, *cnt);
+    }
+
+    return IRQ_HANDLED;
+}
 
 
 // module init ----------------------------------------------------------
 
+static uint64_t count;
+
+int irq_line;
+
+
 static int __init irq_request_init(void)
 {
+    int i;
     pr_info("irq_request_init begin\n");
 
+
+    // if  (request_irq(example_irq_line, example_interrupt, IRQF_SHARED, "test", &count) < 0)
+    // {   pr_warn("request_irq failed\n");
+    //     return -1;
+    // }
+    irq_line = -1;
+    for (i = 0; i < 100; i++)
+    {
+        if  (request_irq(i, example_interrupt, IRQF_SHARED, "test", &count) == 0)
+        {   pr_debug("request_irq %d success\n", i);
+            irq_line = i;
+            break;
+        }
+    }
+
+    if  (irq_line < 0)
+        return -1;
 
     pr_info("irq_request_init end\n");
     return 0;
@@ -24,6 +64,8 @@ static int __init irq_request_init(void)
 static void __exit irq_request_exit(void)
 {
     pr_info("irq_request_exit begin\n");
+
+    free_irq(irq_line, &count);
 
 
     pr_info("irq_request_exit end\n");
