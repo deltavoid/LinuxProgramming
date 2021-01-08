@@ -32,7 +32,7 @@ struct fb_data foo_data = {"foo", "blank"};
 
 static int foo_entry_show(struct seq_file *seq, void *arg)
 {
-    pr_debug("foo_entry_show\n");
+    pr_debug("foo_entry_show, arg: %lx\n", (unsigned long)arg);
 
     seq_puts(seq, "hello, ");
     
@@ -44,10 +44,11 @@ static int foo_entry_show(struct seq_file *seq, void *arg)
 
 static int foo_entry_open(struct inode *inode, struct file *file)
 {
-    pr_debug("foo_entry_open, data: %lx\n", (unsigned long)PDE_DATA(inode));
+    void* data = PDE_DATA(inode);
+    pr_debug("foo_entry_open, data: %lx\n", (unsigned long)data);
 
 
-    return single_open(file, foo_entry_show, NULL);
+    return single_open(file, foo_entry_show, data);
 }
 
 static ssize_t foo_entry_write(struct file *fp, const char __user *buf, size_t size, loff_t *offp)
