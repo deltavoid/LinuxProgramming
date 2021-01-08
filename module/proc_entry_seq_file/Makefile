@@ -1,6 +1,6 @@
 
 
-MODULE := proc_entry1
+MODULE := proc_entry_seq_file
 obj-m += $(MODULE).o
 CFLAGS_$(MODULE).o := -DDEBUG
 KERNDIR	:= /lib/modules/$(shell uname -r)/build
