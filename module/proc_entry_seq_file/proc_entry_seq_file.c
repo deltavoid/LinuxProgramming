@@ -32,6 +32,7 @@ struct fb_data{
 
 static int foo_entry_show(struct seq_file *seq, void *arg)
 {
+    // arg is not for inode data
     struct fb_data* data = PDE_DATA(file_inode(seq->file));;
     pr_debug("foo_entry_show, arg: %lx, data: %lx\n", 
             (unsigned long)arg, (unsigned long)data);
