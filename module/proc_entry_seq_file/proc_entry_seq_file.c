@@ -44,7 +44,8 @@ static int foo_entry_show(struct seq_file *seq, void *arg)
 
 static int foo_entry_open(struct inode *inode, struct file *file)
 {
-    pr_debug("foo_entry_open\n");
+    pr_debug("foo_entry_open, data: %lx\n", (unsigned long)PDE_DATA(inode));
+
 
     return single_open(file, foo_entry_show, NULL);
 }
@@ -86,7 +87,7 @@ static int __init proc_entry1_init(void)
     if  (!example_entry) goto err_example;
 
 
-    foo_entry = proc_create_data("foo", 0, example_entry, &foo_entry_fops, NULL);
+    foo_entry = proc_create_data("foo", 0, example_entry, &foo_entry_fops, 1);
     if  (!foo_entry)  goto err_foo;
 
     pr_info("proc_entry1 inserted\n");
