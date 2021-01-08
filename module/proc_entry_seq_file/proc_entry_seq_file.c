@@ -28,7 +28,6 @@ struct fb_data{
 
 // foo ---------------------------------------------------------
 
-// struct fb_data foo_data = {"foo", "blank"};
 
 static int foo_entry_show(struct seq_file *seq, void *arg)
 {
@@ -37,12 +36,9 @@ static int foo_entry_show(struct seq_file *seq, void *arg)
     pr_debug("foo_entry_show, arg: %lx, data: %lx\n", 
             (unsigned long)arg, (unsigned long)data);
 
-
     seq_puts(seq, "hello, ");
     
     seq_printf(seq, "%s is %s", data->name, data->value);
-    // seq_printf(seq, "%s is %s", "a", "b");
-
 
     return 0;
 }
@@ -53,13 +49,14 @@ static int foo_entry_open(struct inode *inode, struct file *file)
     pr_debug("foo_entry_open, data: %lx\n", (unsigned long)data);
 
 
-    return single_open(file, foo_entry_show, 0x12345678);
+    return single_open(file, foo_entry_show, NULL);
 }
 
 static ssize_t foo_entry_write(struct file *fp, const char __user *buf, size_t size, loff_t *offp)
 {
     struct fb_data* data = PDE_DATA(file_inode(fp));
     pr_debug("foo_entry_write, data: %lx\n", (unsigned long)data);
+
     if  (size > FOOBAR_LEN - 1)  return -1;
 
     if  (copy_from_user(data->value, buf, size) != 0)  return -1;
@@ -91,7 +88,8 @@ static struct proc_dir_entry *example_entry, *foo_entry;
 
 struct fb_data foo_data = {
     .name = "foo", 
-    .value = "blank"};
+    .value = "blank"
+};
 
 static int __init proc_entry1_init(void)
 {
