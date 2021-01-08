@@ -53,6 +53,8 @@ static int foo_entry_open(struct inode *inode, struct file *file)
 
 static ssize_t foo_entry_write(struct file *fp, const char __user *buf, size_t size, loff_t *offp)
 {
+    void* data = PDE_DATA(file_inode(fp));
+    pr_debug("foo_entry_write, data: %lx\n", (unsigned long)data);
     if  (size > FOOBAR_LEN - 1)  return -1;
 
     if  (copy_from_user(foo_data.value, buf, size) != 0)  return -1;
