@@ -86,7 +86,7 @@ static int __init proc_entry1_init(void)
     if  (!example_entry) goto err_example;
 
 
-    foo_entry = proc_create("foo", 0, example_entry, &foo_entry_fops);
+    foo_entry = proc_create_data("foo", 0, example_entry, &foo_entry_fops, NULL);
     if  (!foo_entry)  goto err_foo;
 
     pr_info("proc_entry1 inserted\n");
