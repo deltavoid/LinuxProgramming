@@ -1,0 +1,57 @@
+
+
+outline
+
+
+
+thread context 
+
+    // syscalls
+
+    read
+
+    write
+
+    inet_accept
+
+    epoll_wait
+
+    setsockopt
+
+
+    kthread
+
+    workqueue
+
+    
+    schedule
+
+
+softirq context
+
+    timer 
+
+    net_rx_action
+
+    tasklet
+
+
+hardirq context
+
+    time interrupt
+
+    nic interrupt
+
+
+
+
+any context
+
+    tracepoint
+
+    kprobe
+
+    func pointer
+
+    builted mechanism
+

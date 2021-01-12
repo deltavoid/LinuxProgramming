@@ -28,16 +28,17 @@ struct fb_data{
 
 // foo ---------------------------------------------------------
 
-struct fb_data foo_data = {"foo", "blank"};
 
 static int foo_entry_show(struct seq_file *seq, void *arg)
 {
-    pr_debug("foo_entry_show, arg: %lx\n", (unsigned long)arg);
+    // arg is not for inode data
+    struct fb_data* data = PDE_DATA(file_inode(seq->file));;
+    pr_debug("foo_entry_show, arg: %lx, data: %lx\n", 
+            (unsigned long)arg, (unsigned long)data);
 
     seq_puts(seq, "hello, ");
     
-    seq_printf(seq, "%s is %s", foo_data.name, foo_data.value);
-
+    seq_printf(seq, "%s is %s", data->name, data->value);
 
     return 0;
 }
@@ -48,15 +49,18 @@ static int foo_entry_open(struct inode *inode, struct file *file)
     pr_debug("foo_entry_open, data: %lx\n", (unsigned long)data);
 
 
-    return single_open(file, foo_entry_show, data);
+    return single_open(file, foo_entry_show, NULL);
 }
 
 static ssize_t foo_entry_write(struct file *fp, const char __user *buf, size_t size, loff_t *offp)
 {
+    struct fb_data* data = PDE_DATA(file_inode(fp));
+    pr_debug("foo_entry_write, data: %lx\n", (unsigned long)data);
+
     if  (size > FOOBAR_LEN - 1)  return -1;
 
-    if  (copy_from_user(foo_data.value, buf, size) != 0)  return -1;
-    foo_data.value[size] = '\0';
+    if  (copy_from_user(data->value, buf, size) != 0)  return -1;
+    data->value[size] = '\0';
 
     *offp += size;
 
@@ -79,7 +83,13 @@ static const struct file_operations foo_entry_fops =
 // init --------------------------------------------------------------
 
 
+
 static struct proc_dir_entry *example_entry, *foo_entry;
+
+struct fb_data foo_data = {
+    .name = "foo", 
+    .value = "blank"
+};
 
 static int __init proc_entry1_init(void)
 {
@@ -88,7 +98,8 @@ static int __init proc_entry1_init(void)
     if  (!example_entry) goto err_example;
 
 
-    foo_entry = proc_create_data("foo", 0, example_entry, &foo_entry_fops, 1);
+    pr_debug("foo_data: %lx\n", (unsigned long)&foo_data);
+    foo_entry = proc_create_data("foo", 0, example_entry, &foo_entry_fops, &foo_data);
     if  (!foo_entry)  goto err_foo;
 
     pr_info("proc_entry1 inserted\n");
