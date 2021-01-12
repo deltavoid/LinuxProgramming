@@ -161,6 +161,15 @@ static void preempt_count_test(void)
 }
 
 
+static void dump_stack_test(void)
+{
+    local_irq_disable();
+
+    dump_stack();
+
+    local_irq_enable();
+}
+
 // module init ---------------------------------------------------------------
 
 
@@ -181,11 +190,12 @@ static int __init preempt_count_display_init(void)
     // }
     // pr_info("Planted kprobe at %p\n", kp.addr);
 
-    current_display();
+    // current_display();
 
-    preempt_count_display();
-    preempt_count_test();
+    // preempt_count_display();
+    // preempt_count_test();
     
+    dump_stack_test();
 
     return 0;
 }
@@ -194,10 +204,10 @@ static void __exit preempt_count_display_exit(void)
 {
     // unregister_kprobe(&kp);
 
-    preempt_count_display();
+    // preempt_count_display();
 
 
-    pr_info("kprobe at %p unregistered\n", kp.addr);
+    // pr_info("kprobe at %p unregistered\n", kp.addr);
     pr_debug("----------------------------------------------\n");
 }
 
