@@ -12,25 +12,25 @@
 
 // module init ----------------------------------------------------------
 
-static int __init hello_init(void)
+static int __init module_get_init(void)
 {
-    pr_info("hello_init begin\n");
+    pr_info("module_get_init begin\n");
 
 
-    pr_info("hello_init end\n");
+    pr_info("module_get_init end\n");
     return 0;
 }
 
-static void __exit hello_exit(void)
+static void __exit module_get_exit(void)
 {
-    pr_info("hello_exit begin\n");
+    pr_info("module_get_exit begin\n");
 
 
-    pr_info("hello_exit end\n");
+    pr_info("module_get_exit end\n");
     pr_debug("-------------------------------------------------\n");
 }
 
 
-module_init(hello_init);
-module_exit(hello_exit);
+module_init(module_get_init);
+module_exit(module_get_exit);
 MODULE_LICENSE("GPL");
