@@ -12,9 +12,23 @@
 
 // module init ----------------------------------------------------------
 
+atomic_t cnt;
+
 static int __init atomic_use_init(void)
 {
     pr_info("atomic_use_init begin\n");
+
+    atomic_set(&cnt, 0);
+    pr_debug("cnt: %d\n", atomic_read(&cnt));
+
+    atomic_inc(&cnt);
+    pr_debug("cnt: %d\n", atomic_read(&cnt));
+
+    atomic_add(1, &cnt);
+    pr_debug("cnt: %d\n", atomic_read(&cnt));
+
+    atomic_sub(1, &cnt);
+    pr_debug("cnt: %d\n", atomic_read(&cnt));
 
 
     pr_info("atomic_use_init end\n");
