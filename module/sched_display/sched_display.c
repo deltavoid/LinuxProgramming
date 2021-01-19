@@ -11,6 +11,8 @@
 #include <trace/events/sched.h>
 
 
+
+
 // preempt_count display ------------------------------------------
 
 static void preempt_count_display(void)
@@ -26,6 +28,8 @@ static void preempt_count_display(void)
     pr_debug("preempt_count: 0x%08x, test_preempt_need_resched: %d\n", preempt_count(), test_preempt_need_resched());
     // pr_debug("test_preempt_need_resched: %d\n", test_preempt_need_resched());
 }
+
+
 
 // probe sched ----------------------------------------------------
 
@@ -59,55 +63,23 @@ static void probe_sched_switch(void *priv, bool preempt,
 
 }
 
-// static void probe_tcp_recv_length(struct sock *sk, int length, int error, int flags)
-// {
-//     pr_debug("probe_tcp_recv_length\n");
-//     preempt_count_display();
 
+u64 __percpu * probe_sched_migrate_count;
+
+static void probe_sched_migrate_task(void *priv, struct task_struct *p, int cpu)
+{
+    u64* count = this_cpu_ptr(probe_sched_migrate_count);
     
-//         if  (in_task())
-//         {
-//             preempt_disable();
-//             if  (smp_processor_id() == 0)
-//                 dump_stack();
-//             preempt_enable();
-//         }
-    
-// }
+    if  (++*count % 10 == 0)
+    {
+        pr_debug("probe_sched_migrate: task: %s, cpu: %d\n", p->comm, cpu);
+        preempt_count_display();
+    }
+}
 
-// static void probe_tcp_probe(struct sock *sk, struct sk_buff *skb)
-// {
-//     pr_debug("probe_tcp_probe\n");
-//     preempt_count_display();
 
-    
-//         // if  (in_task())
-//         {
-//             preempt_disable();
-//             if  (smp_processor_id() == 0)
-//                 dump_stack();
-//             preempt_enable();
-//         }
-
-// }
-
-// static void probe_local_timer_entry(int id)
-// {
-//     if  (smp_processor_id() == 0)
-//     {
-
-//         pr_debug("probe_local_timer_entry, jiffies: %ld\n", jiffies);
-//         preempt_count_display();
-
-//         dump_stack();
-
-//         printk("\n");
-//     }
-
-// }
 
 // tracepoint_probe_context ----------------------------------------
-
 
 struct tracepoint_probe_entry {
     char* name;
@@ -199,18 +171,13 @@ static struct tracepoint_probe_context sched_probes = {
             .probe = probe_sched_switch,
             .priv = NULL,
         },
-        // {
-        //     .name = "tcp_probe",
-        //     .probe = probe_tcp_probe,
-        //     .priv = NULL,
-        // },
-        // {
-        //     .name = "local_timer_entry",
-        //     .probe = probe_local_timer_entry,
-        //     .priv = NULL,
-        // },
+        {
+            .name = "sched_migrate_task",
+            .probe = probe_sched_migrate_task,
+            .priv = NULL,
+        },
     },
-    .init_num = 2
+    .init_num = 3
 };
 
 
@@ -221,6 +188,7 @@ static int __init tracepoint_init(void)
 
     probe_sched_wakeup_count = alloc_percpu(u64);
     probe_sched_switch_count = alloc_percpu(u64);
+    probe_sched_migrate_count = alloc_percpu(u64);
 
     if  (tracepoint_probe_context_find_tracepoints(&sched_probes) < 0)
     {   pr_warn("find tracepoints failed\n");
@@ -245,6 +213,7 @@ static void __exit tracepoint_exit(void)
 
     free_percpu(probe_sched_wakeup_count);
     free_percpu(probe_sched_switch_count);
+    free_percpu(probe_sched_migrate_count);
 
     pr_debug("tracepoint_exit end\n");
     pr_debug("------------------------------------------------------------------\n");
