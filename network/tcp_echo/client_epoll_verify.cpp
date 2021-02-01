@@ -4,6 +4,7 @@
 */
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
 #include <cstring>
 #include <ctime>
 
@@ -221,9 +222,14 @@ class Connection
     Tracer* tracer;
     LatencyTracer* latency_tracer;
 
-    Connection(int fd, int pkt_size, char* tx_buf, char* rx_buf, Tracer* tracer, LatencyTracer* latency_tracer)
-        : fd(fd), pkt_size(pkt_size), tx_buf(tx_buf), rx_buf(rx_buf), tracer(tracer), latency_tracer(latency_tracer)
+    uint64_t tx_seq, rx_seq;
+    uint64_t* err_cnt_p;
+
+    Connection(int fd, int pkt_size, char* tx_buf, char* rx_buf, Tracer* tracer, LatencyTracer* latency_tracer, uint64_t* err_cnt_p)
+        : fd(fd), pkt_size(pkt_size), tx_buf(tx_buf), rx_buf(rx_buf), tracer(tracer), latency_tracer(latency_tracer), err_cnt_p(err_cnt_p)
     {
+        tx_seq = 0;
+        rx_seq = 0;
     }
 
     ~Connection() 
@@ -233,8 +239,12 @@ class Connection
 
     void send()
     {
-        struct timeval* stamp = (struct timeval*)tx_buf;
-        gettimeofday(stamp, NULL);
+        // struct timeval* stamp = (struct timeval*)tx_buf;
+        // gettimeofday(stamp, NULL);
+        for (int i = 0; i < pkt_size; i += sizeof(uint64_t))
+        {
+            *((uint64_t*)tx_buf + i) = tx_seq++;
+        }
 
         int sent = ::send_full(fd, tx_buf, pkt_size, 0);
         tracer->inc(tracer->TX_PKT);
@@ -246,15 +256,25 @@ class Connection
         int recd = ::recv(fd, rx_buf, pkt_size, 0);
 
         if  (recd == pkt_size)
-        {   struct timeval now;
-            gettimeofday(&now, NULL);
-            struct timeval* old = (struct timeval*)rx_buf;
+        {   
+            // struct timeval now;
+            // gettimeofday(&now, NULL);
+            // struct timeval* old = (struct timeval*)rx_buf;
             
-            ll rtt = (now.tv_usec - old->tv_usec) 
-                    + (now.tv_sec - old->tv_sec) * 1000 * 1000;
+            // ll rtt = (now.tv_usec - old->tv_usec) 
+            //         + (now.tv_sec - old->tv_sec) * 1000 * 1000;
             // printf("rtt: %lld\n", rtt);
             // be carefull of segment fault for array size not enough 
-            latency_tracer->push(rtt);
+            // latency_tracer->push(rtt);
+
+            for (int i = 0; i < pkt_size; i += sizeof(uint64_t))
+            {
+                uint64_t val = *(uint64_t*)(rx_buf + i);
+                if  (val != rx_seq++)
+                    *err_cnt_p++;
+            }
+
+
         }
 
         tracer->inc(tracer->RX_PKT);
@@ -285,11 +305,15 @@ class EventLoop
 
     Tracer tracer, old_tracer;
     LatencyTracer latency_tracer;
+    uint64_t err_cnt;
+
 
     EventLoop(struct sockaddr* addr, int conn_num, int pkt_size)
         : events(conn_num), tx_buf(max_pkt_size), rx_buf(max_pkt_size)
     {
         if  ((epfd = epoll_create1(0)) < 0)  perror("epoll_create1 error");
+        
+        err_cnt = 0;
 
 
         for (int i = 0; i  < conn_num; i++)
@@ -305,7 +329,8 @@ class EventLoop
             if  (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event) < 0)  perror("epoll add error");
             
 
-            conns.push_back(std::make_unique<Connection>(fd, pkt_size, tx_buf.data(), rx_buf.data(), &tracer, &latency_tracer));
+            conns.push_back(std::make_unique<Connection>(
+                    fd, pkt_size, tx_buf.data(), rx_buf.data(), &tracer, &latency_tracer, &err_cnt));
 
             printf("establish connection on fd %d\n", fd);
         }
@@ -347,7 +372,9 @@ class EventLoop
         now.get_time();
         Tracer::report(&now, &this->old_tracer, total);
 
-        this->latency_tracer.report(total);
+        printf("err_cnt: %llu", err_cnt);
+
+        // this->latency_tracer.report(total);
 
         printf("\n");
     }
