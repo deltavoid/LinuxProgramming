@@ -201,16 +201,16 @@ class LatencyTracer
     }
 };
 
-    void Total::report()
+void Total::report()
+{
+    for (int i = 0; i < 4; i++)
     {
-        for (int i = 0; i < 4; i++)
-        {
-            printf("%s: %.2lf  ", ThroughputTracer::item_name[i], data[i]);
-        }
-
-        printf("latency avg us: %.2lf  ", latencies / num);
-        printf("latency p99 us: %lld\n", ::get_p99(&tails, num / 100));
+        printf("%s: %.2lf  ", ThroughputTracer::item_name[i], data[i]);
     }
+
+    printf("latency avg us: %.2lf  ", latencies / num);
+    printf("latency p99 us: %lld\n", ::get_p99(&tails, num / 100));
+}
 
 
 class Connection
@@ -263,11 +263,19 @@ class Connection
         // printf("fd %d recv %d bytes\n", fd, recd);
     }
 
-    void handle()
+    // void handle()
+    int handle(uint32_t events)
     {
-        recv();
+        if  (events & EPOLLIN)
+        {
+            recv();
 
-        send();
+            send();
+        }
+        else
+            return -1;
+
+        return 0;
     }
 
 };
@@ -336,7 +344,7 @@ class EventLoop
 
             for (int i = 0; i < num; i++)
             {
-                conns[events[i].data.u32]->handle();
+                conns[events[i].data.u32]->handle(events[i].events);
             }
         }
     }
