@@ -78,6 +78,14 @@ public:
     Connection(int fd, int epfd)
         : fd(fd), epfd(epfd)
     {
+        printf("Connection::Connection: fd: %d, epfd: %d\n", fd, epfd);
+
+        struct epoll_event event;
+        event.events = EPOLLIN;
+        event.data.ptr = this;
+        if  (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event) < 0)
+        {   perror("epoll_ctl add error");
+        }
     }
 
     virtual ~Connection()
@@ -91,6 +99,7 @@ public:
 
     virtual int handle(uint32_t ev)
     {
+        printf("Connection::handle: ev: %d\n", ev);
         return 0;
     }
 };
@@ -112,10 +121,6 @@ public:
         {   perror("bind error");
         }
 
-        // struct epoll_event event = {
-        //     .events = EPOLLIN ,
-        //     .data.ptr = this,
-        // };
         struct epoll_event event;
         event.events = EPOLLIN;
         event.data.ptr = this;
@@ -141,7 +146,18 @@ public:
 
     virtual int handle(uint32_t ev)
     {
-        printf("Acceptor::handle\n");
+        printf("Acceptor::handle, ev: %d\n", ev);
+
+        if  (ev & ~EPOLLIN)
+            return -1;
+
+        struct sockaddr_in remote_addr;
+        socklen_t addr_len;
+        int new_fd = ::accept4(fd, (struct sockaddr*)&remote_addr, &addr_len, SOCK_NONBLOCK);
+        if  (new_fd < 0)
+            return -1;
+
+        Connection* conn = new Connection(new_fd, epfd);
         return 0;
     }
 };
@@ -163,7 +179,6 @@ public:
         if  (epfd < 0)
             perror("epoll_create1 error");
 
-        
 
         running = true;
         // thread = std::make_unique<std::thread>( [this]() {  this->run();} );
@@ -179,15 +194,10 @@ public:
 
     void run()
     {
-        int i = 0;
         while (running)
         {
-            // printf("hello EventLoop, i: %d\n", i);
-            // sleep(1);
-            
-            // if  (++i >= 5)
-            //     break;    
-            int num = epoll_wait(epfd, events, max_events, 0);
+            int num = epoll_wait(epfd, events, max_events, -1);
+            printf("epoll_wait ret %d\n", num);
 
             for (int i = 0; i < num; i++)
             {
