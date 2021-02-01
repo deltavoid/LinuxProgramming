@@ -25,6 +25,14 @@ const int max_events = max_conn;
 const int max_pkt_size = 1024;
 
 
+class EpollHandler
+{public:
+    virtual int handle(uint32_t events) { return -1;}
+    virtual ~EpollHandler() {}
+};
+
+
+
 struct sockaddr_in local_addr;
 int thread_num = 1;
 int conn_num = 1;
@@ -61,11 +69,48 @@ int parse_args(int argc, char** argv)
 }
 
 
+class EventLoop {
+public:
+    int epfd;
+    volatile bool running;
+    // std::unique_ptr<std::thread> thread;
+
+    EventLoop()
+    {
+
+        running = true;
+        // thread = std::make_unique<std::thread>( [this]() {  this->run();} );
+    }
+
+    ~EventLoop()
+    {
+        // thread->join();
+    }
+
+    void run()
+    {
+        // while (running)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                printf("hello EventLoop, i: %d\n", i);
+                sleep(1);
+            }
+        }
+    }
+};
+
+
 int main(int argc, char** argv)
 {
     printf("hello world\n");
     if  (parse_args(argc, argv) < 0)
         return 1;
+
+    EventLoop loop;
+    // loop.thread->join();
+    // sleep(10);
+    loop.run();
 
 
     return 0;
