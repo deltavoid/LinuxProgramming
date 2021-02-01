@@ -44,6 +44,9 @@ run_client: client
 run_client_epoll_bench: client_epoll_bench
 	numactl --cpubind=1 --membind=1 ./client_epoll_bench 127.0.0.1 $(PORT) 1 4 64 1000
 
+run_client_epoll_verify: client_epoll_verify
+	numactl --cpubind=1 --membind=1 ./client_epoll_verify 127.0.0.1 $(PORT) 1 1 64 1000
+
 run_client_test_epollout: client_test_epollout
 	./$< 127.0.0.1 $(PORT)
 
@@ -87,6 +90,9 @@ client: client.cpp util.h util.cpp
 	g++ -g -fno-omit-frame-pointer -o $@ $^ -pthread
 
 client_epoll_bench: client_epoll_bench.cpp util.h util.cpp
+	g++ -o $@ $^ -pthread
+
+client_epoll_verify: client_epoll_verify.cpp util.h util.cpp
 	g++ -o $@ $^ -pthread
 
 client_test_epollout: client_test_epollout.cpp util.h util.cpp

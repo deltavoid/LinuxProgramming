@@ -2,6 +2,7 @@
 
 client
 client_epoll_bench
+client_epoll_verify
 client_test_epollout
 
 server
