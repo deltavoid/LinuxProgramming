@@ -100,6 +100,7 @@ public:
     virtual int handle(uint32_t ev)
     {
         printf("Connection::handle: ev: %d\n", ev);
+        return -1;
         return 0;
     }
 };
@@ -189,7 +190,7 @@ public:
         // thread->join();
 
         close(epfd);
-        delete events;
+        delete[] events;
     }
 
     void run()
@@ -197,7 +198,7 @@ public:
         while (running)
         {
             int num = epoll_wait(epfd, events, max_events, -1);
-            printf("epoll_wait ret %d\n", num);
+            printf("EventLoop::run: epoll_wait ret %d\n", num);
 
             for (int i = 0; i < num; i++)
             {
