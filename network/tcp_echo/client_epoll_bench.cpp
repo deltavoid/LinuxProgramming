@@ -387,18 +387,8 @@ int parse_arg(int argc, char** argv)
     return 0;
 }
 
-int main(int argc, char** argv)
+int init_timerfd()
 {
-    if  (parse_arg(argc, argv) < 0)  return 0;
-
-    std::vector<std::unique_ptr<EventLoop>> loops;
-    for (int i = 0; i < thread_num; i++)
-    {
-        loops.push_back(std::make_unique<EventLoop>((struct sockaddr*)&dst_addr, conn_num, pkt_size));
-    }
-
-
-
     int fd = timerfd_create(CLOCK_REALTIME, 0);
 
     struct timespec now;
@@ -419,9 +409,25 @@ int main(int argc, char** argv)
     {   perror("timerfd_settime error");
     }
 
+    return fd;
+}
+
+int main(int argc, char** argv)
+{
+    if  (parse_arg(argc, argv) < 0)  return 0;
+
+    std::vector<std::unique_ptr<EventLoop>> loops;
+    for (int i = 0; i < thread_num; i++)
+    {
+        loops.push_back(std::make_unique<EventLoop>((struct sockaddr*)&dst_addr, conn_num, pkt_size));
+    }
+
+
+
+    int fd = init_timerfd();
+
     for (int i = 0; i < duration; i++)
     {
-        // sleep(1);
         uint64_t val;
         if  (read(fd, &val, sizeof(val)) != sizeof(val))
         {   perror("read timerfd error");
