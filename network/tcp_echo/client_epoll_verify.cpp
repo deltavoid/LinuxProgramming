@@ -243,8 +243,12 @@ class Connection
         // gettimeofday(stamp, NULL);
         for (int i = 0; i < pkt_size; i += sizeof(uint64_t))
         {
-            *((uint64_t*)tx_buf + i) = tx_seq++;
+            *(uint64_t*)(tx_buf + i) = tx_seq++;
         }
+        // for (int i = 0; i < pkt_size; i += sizeof(uint32_t))
+        // {
+        //     *(uint32_t*)(tx_buf + i) = 0x12345678;
+        // }
 
         int sent = ::send_full(fd, tx_buf, pkt_size, 0);
         tracer->inc(tracer->TX_PKT);
@@ -254,9 +258,11 @@ class Connection
     void recv()
     {
         int recd = ::recv(fd, rx_buf, pkt_size, 0);
+        // printf("recd: %d, pkt_size: %d\n", recd, pkt_size);
 
         if  (recd == pkt_size)
         {   
+            // printf("recd: %d, pkt_size: %d\n", recd, pkt_size);
             // struct timeval now;
             // gettimeofday(&now, NULL);
             // struct timeval* old = (struct timeval*)rx_buf;
@@ -271,10 +277,8 @@ class Connection
             {
                 uint64_t val = *(uint64_t*)(rx_buf + i);
                 if  (val != rx_seq++)
-                    *err_cnt_p++;
+                    (*err_cnt_p)++;
             }
-
-
         }
 
         tracer->inc(tracer->RX_PKT);
