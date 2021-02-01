@@ -153,11 +153,17 @@ public:
     volatile bool running;
     // std::unique_ptr<std::thread> thread;
 
+    struct epoll_event* events;
+
     EventLoop()
     {
+        events = new struct epoll_event[max_events];
+    
         epfd = epoll_create1(0);
         if  (epfd < 0)
             perror("epoll_create1 error");
+
+        
 
         running = true;
         // thread = std::make_unique<std::thread>( [this]() {  this->run();} );
@@ -166,7 +172,9 @@ public:
     ~EventLoop()
     {
         // thread->join();
+
         close(epfd);
+        delete events;
     }
 
     void run()
@@ -174,11 +182,20 @@ public:
         int i = 0;
         while (running)
         {
-            printf("hello EventLoop, i: %d\n", i);
-            sleep(1);
+            // printf("hello EventLoop, i: %d\n", i);
+            // sleep(1);
             
-            if  (++i >= 5)
-                break;        
+            // if  (++i >= 5)
+            //     break;    
+            int num = epoll_wait(epfd, events, max_events, 0);
+
+            for (int i = 0; i < num; i++)
+            {
+                EpollHandler* handler = (EpollHandler*)events[i].data.ptr;
+
+                if  (handler->handle(events[i].events) < 0)
+                    delete handler;
+            }    
         }
     }
 };
@@ -193,11 +210,13 @@ int main(int argc, char** argv)
     EventLoop loop;
     // loop.thread->join();
     // sleep(10);
-    // loop.run();
+
 
     Acceptor acceptor(&local_addr, loop.epfd);
     acceptor.listen(10);
     // acceptor.handle(EPOLLIN); 
+
+    loop.run();
 
 
     return 0;
