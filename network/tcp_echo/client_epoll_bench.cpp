@@ -20,6 +20,7 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <sys/time.h>
+#include <sys/timerfd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -396,9 +397,36 @@ int main(int argc, char** argv)
         loops.push_back(std::make_unique<EventLoop>((struct sockaddr*)&dst_addr, conn_num, pkt_size));
     }
 
+
+
+    int fd = timerfd_create(CLOCK_REALTIME, 0);
+
+    struct timespec now;
+    if (clock_gettime(CLOCK_REALTIME, &now) < 0)
+    {   perror("clock_gettime error");
+    }
+
+    int initial_expiration = 2;
+    int interval = 1;
+
+    struct itimerspec itimerspec;
+    itimerspec.it_value.tv_sec = now.tv_sec + initial_expiration;
+    itimerspec.it_value.tv_nsec = now.tv_nsec;
+    itimerspec.it_interval.tv_sec = interval;
+    itimerspec.it_interval.tv_nsec = 0;
+
+    if (timerfd_settime(fd, TFD_TIMER_ABSTIME, &itimerspec, NULL) < 0)
+    {   perror("timerfd_settime error");
+    }
+
     for (int i = 0; i < duration; i++)
     {
-        sleep(1);
+        // sleep(1);
+        uint64_t val;
+        if  (read(fd, &val, sizeof(val)) != sizeof(val))
+        {   perror("read timerfd error");
+            break;
+        }
 
         Total total;
         for (int j = 0; j < loops.size(); j++)
@@ -412,6 +440,8 @@ int main(int argc, char** argv)
         
         printf("\n");
     }
+
+
 
     for (int i = 0; i < loops.size(); i++)
         loops[i]->running = false;
