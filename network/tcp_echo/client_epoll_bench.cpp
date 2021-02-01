@@ -68,7 +68,7 @@ ll get_p99(std::unordered_map<ll, ll>* tails, ll tail_num)
 
 class Total
 {public:
-    // Tracer::INDEX_MAX
+    // ThroughputTracer::INDEX_MAX
     double data[4];
 
     double latencies;
@@ -90,7 +90,7 @@ class Total
 
 };
 
-class Tracer
+class ThroughputTracer
 {public:
     enum Item
     {   TX_PKT = 0,
@@ -104,20 +104,20 @@ class Tracer
     unsigned long long data[INDEX_MAX];
     struct timeval stamp;
 
-    Tracer()
+    ThroughputTracer()
     {
         memset(data, 0, sizeof(data));
         get_time();
     }
 
-    ~Tracer() {}
+    ~ThroughputTracer() {}
 
     void get_time()  {  gettimeofday(&stamp, NULL);}
 
     void inc(int idx)  {  data[idx]++;}
     void add(int idx, int val)  {  data[idx] += val;}
 
-    static void report(Tracer* now, Tracer* old, Total* total)
+    static void report(ThroughputTracer* now, ThroughputTracer* old, Total* total)
     {
         double dt_time = now->stamp.tv_usec - old->stamp.tv_usec 
                 + (now->stamp.tv_sec - old->stamp.tv_sec) * 1000 * 1000;
@@ -137,7 +137,7 @@ class Tracer
     }
 };
 
-const char* Tracer::item_name[] = {
+const char* ThroughputTracer::item_name[] = {
     "tx pkt/s",
     "rx pkt/s",
     "tx byte/s",
@@ -204,7 +204,7 @@ class LatencyTracer
     {
         for (int i = 0; i < 4; i++)
         {
-            printf("%s: %.2lf  ", Tracer::item_name[i], data[i]);
+            printf("%s: %.2lf  ", ThroughputTracer::item_name[i], data[i]);
         }
 
         printf("latency avg us: %.2lf  ", latencies / num);
@@ -218,10 +218,10 @@ class Connection
     int pkt_size;
     char* tx_buf;
     char* rx_buf;
-    Tracer* tracer;
+    ThroughputTracer* tracer;
     LatencyTracer* latency_tracer;
 
-    Connection(int fd, int pkt_size, char* tx_buf, char* rx_buf, Tracer* tracer, LatencyTracer* latency_tracer)
+    Connection(int fd, int pkt_size, char* tx_buf, char* rx_buf, ThroughputTracer* tracer, LatencyTracer* latency_tracer)
         : fd(fd), pkt_size(pkt_size), tx_buf(tx_buf), rx_buf(rx_buf), tracer(tracer), latency_tracer(latency_tracer)
     {
     }
@@ -283,7 +283,7 @@ class EventLoop
     bool running;
     std::unique_ptr<std::thread> thread;
 
-    Tracer tracer, old_tracer;
+    ThroughputTracer tracer, old_tracer;
     LatencyTracer latency_tracer;
 
     EventLoop(struct sockaddr* addr, int conn_num, int pkt_size)
@@ -343,9 +343,9 @@ class EventLoop
     // work in main thread
     void report(Total* total)
     {
-        Tracer now(this->tracer);
+        ThroughputTracer now(this->tracer);
         now.get_time();
-        Tracer::report(&now, &this->old_tracer, total);
+        ThroughputTracer::report(&now, &this->old_tracer, total);
 
         this->latency_tracer.report(total);
 
