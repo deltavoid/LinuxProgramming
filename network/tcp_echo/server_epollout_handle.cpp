@@ -77,6 +77,9 @@ public:
 
     EventLoop()
     {
+        epfd = epoll_create1(0);
+        if  (epfd < 0)
+            perror("epoll_create1 error");
 
         running = true;
         // thread = std::make_unique<std::thread>( [this]() {  this->run();} );
@@ -85,17 +88,19 @@ public:
     ~EventLoop()
     {
         // thread->join();
+        close(epfd);
     }
 
     void run()
     {
-        // while (running)
+        int i = 0;
+        while (running)
         {
-            for (int i = 0; i < 5; i++)
-            {
-                printf("hello EventLoop, i: %d\n", i);
-                sleep(1);
-            }
+            printf("hello EventLoop, i: %d\n", i);
+            sleep(1);
+            
+            if  (++i >= 5)
+                break;        
         }
     }
 };
