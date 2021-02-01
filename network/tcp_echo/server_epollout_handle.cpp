@@ -69,6 +69,37 @@ int parse_args(int argc, char** argv)
 }
 
 
+class Acceptor : public EpollHandler {
+public:
+    
+};
+
+class Connection : public EpollHandler {
+public:
+    int fd;
+    int epfd;
+
+    Connection(int fd, int epfd)
+        : fd(fd), epfd(epfd)
+    {
+    }
+
+    virtual ~Connection()
+    {
+        if  (epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL) < 0)
+            perror("epoll_ctl del error");
+        
+        close(fd);
+        printf("fd %d closed\n", fd);
+    }
+
+    virtual int handle(uint32_t ev)
+    {
+        return 0;
+    }
+};
+
+
 class EventLoop {
 public:
     int epfd;
