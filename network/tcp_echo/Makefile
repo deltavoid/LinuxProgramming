@@ -35,6 +35,9 @@ run_server_epoll_et: server_epoll_et
 run_server_epollout: server_epollout
 	./$< $(PORT)
 
+run_server_epollout_handle: server_epollout_handle
+	./$< $(PORT)
+
 run_server_epollout_simple: server_epollout_simple
 	./$< $(PORT)
 
@@ -76,6 +79,9 @@ server_epoll_et: server_epoll_et.cpp
 	g++ -o $@ $^ -pthread
 
 server_epollout: server_epollout.cpp
+	g++ -o $@ $^ -pthread
+
+server_epollout_handle: server_epollout_handle.cpp
 	g++ -o $@ $^ -pthread
 
 server_epollout_simple: server_epollout_simple.cpp
