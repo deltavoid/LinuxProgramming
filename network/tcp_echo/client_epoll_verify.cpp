@@ -4,7 +4,6 @@
 */
 #include <cstdio>
 #include <cstdlib>
-#include <cstdint>
 #include <cstring>
 #include <ctime>
 
@@ -21,6 +20,7 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <sys/time.h>
+#include <sys/timerfd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -69,7 +69,7 @@ ll get_p99(std::unordered_map<ll, ll>* tails, ll tail_num)
 
 class Total
 {public:
-    // Tracer::INDEX_MAX
+    // ThroughputTracer::INDEX_MAX
     double data[4];
 
     double latencies;
@@ -91,7 +91,7 @@ class Total
 
 };
 
-class Tracer
+class ThroughputTracer
 {public:
     enum Item
     {   TX_PKT = 0,
@@ -105,20 +105,20 @@ class Tracer
     unsigned long long data[INDEX_MAX];
     struct timeval stamp;
 
-    Tracer()
+    ThroughputTracer()
     {
         memset(data, 0, sizeof(data));
         get_time();
     }
 
-    ~Tracer() {}
+    ~ThroughputTracer() {}
 
     void get_time()  {  gettimeofday(&stamp, NULL);}
 
     void inc(int idx)  {  data[idx]++;}
     void add(int idx, int val)  {  data[idx] += val;}
 
-    static void report(Tracer* now, Tracer* old, Total* total)
+    static void report(ThroughputTracer* now, ThroughputTracer* old, Total* total)
     {
         double dt_time = now->stamp.tv_usec - old->stamp.tv_usec 
                 + (now->stamp.tv_sec - old->stamp.tv_sec) * 1000 * 1000;
@@ -138,7 +138,7 @@ class Tracer
     }
 };
 
-const char* Tracer::item_name[] = {
+const char* ThroughputTracer::item_name[] = {
     "tx pkt/s",
     "rx pkt/s",
     "tx byte/s",
@@ -201,16 +201,16 @@ class LatencyTracer
     }
 };
 
-    void Total::report()
+void Total::report()
+{
+    for (int i = 0; i < 4; i++)
     {
-        for (int i = 0; i < 4; i++)
-        {
-            printf("%s: %.2lf  ", Tracer::item_name[i], data[i]);
-        }
-
-        printf("latency avg us: %.2lf  ", latencies / num);
-        printf("latency p99 us: %lld\n", ::get_p99(&tails, num / 100));
+        printf("%s: %.2lf  ", ThroughputTracer::item_name[i], data[i]);
     }
+
+    printf("latency avg us: %.2lf  ", latencies / num);
+    printf("latency p99 us: %lld\n", ::get_p99(&tails, num / 100));
+}
 
 
 class Connection
@@ -219,13 +219,13 @@ class Connection
     int pkt_size;
     char* tx_buf;
     char* rx_buf;
-    Tracer* tracer;
+    ThroughputTracer* tracer;
     LatencyTracer* latency_tracer;
 
     uint64_t tx_seq, rx_seq;
     uint64_t* err_cnt_p;
 
-    Connection(int fd, int pkt_size, char* tx_buf, char* rx_buf, Tracer* tracer, LatencyTracer* latency_tracer, uint64_t* err_cnt_p)
+    Connection(int fd, int pkt_size, char* tx_buf, char* rx_buf, ThroughputTracer* tracer, LatencyTracer* latency_tracer, uint64_t* err_cnt_p)
         : fd(fd), pkt_size(pkt_size), tx_buf(tx_buf), rx_buf(rx_buf), tracer(tracer), latency_tracer(latency_tracer), err_cnt_p(err_cnt_p)
     {
         tx_seq = 0;
@@ -245,10 +245,6 @@ class Connection
         {
             *(uint64_t*)(tx_buf + i) = tx_seq++;
         }
-        // for (int i = 0; i < pkt_size; i += sizeof(uint32_t))
-        // {
-        //     *(uint32_t*)(tx_buf + i) = 0x12345678;
-        // }
 
         int sent = ::send_full(fd, tx_buf, pkt_size, 0);
         tracer->inc(tracer->TX_PKT);
@@ -258,19 +254,17 @@ class Connection
     void recv()
     {
         int recd = ::recv(fd, rx_buf, pkt_size, 0);
-        // printf("recd: %d, pkt_size: %d\n", recd, pkt_size);
 
         if  (recd == pkt_size)
         {   
-            // printf("recd: %d, pkt_size: %d\n", recd, pkt_size);
             // struct timeval now;
             // gettimeofday(&now, NULL);
             // struct timeval* old = (struct timeval*)rx_buf;
             
             // ll rtt = (now.tv_usec - old->tv_usec) 
             //         + (now.tv_sec - old->tv_sec) * 1000 * 1000;
-            // printf("rtt: %lld\n", rtt);
-            // be carefull of segment fault for array size not enough 
+            // // printf("rtt: %lld\n", rtt);
+            // // be carefull of segment fault for array size not enough 
             // latency_tracer->push(rtt);
 
             for (int i = 0; i < pkt_size; i += sizeof(uint64_t))
@@ -286,11 +280,19 @@ class Connection
         // printf("fd %d recv %d bytes\n", fd, recd);
     }
 
-    void handle()
+    // void handle()
+    int handle(uint32_t events)
     {
-        recv();
+        if  (events & EPOLLIN)
+        {
+            recv();
 
-        send();
+            send();
+
+            return 0;
+        }
+        else
+            return -1;
     }
 
 };
@@ -307,17 +309,14 @@ class EventLoop
     bool running;
     std::unique_ptr<std::thread> thread;
 
-    Tracer tracer, old_tracer;
+    ThroughputTracer tracer, old_tracer;
     LatencyTracer latency_tracer;
     uint64_t err_cnt;
-
 
     EventLoop(struct sockaddr* addr, int conn_num, int pkt_size)
         : events(conn_num), tx_buf(max_pkt_size), rx_buf(max_pkt_size)
     {
         if  ((epfd = epoll_create1(0)) < 0)  perror("epoll_create1 error");
-        
-        err_cnt = 0;
 
 
         for (int i = 0; i  < conn_num; i++)
@@ -364,7 +363,7 @@ class EventLoop
 
             for (int i = 0; i < num; i++)
             {
-                conns[events[i].data.u32]->handle();
+                conns[events[i].data.u32]->handle(events[i].events);
             }
         }
     }
@@ -372,13 +371,13 @@ class EventLoop
     // work in main thread
     void report(Total* total)
     {
-        Tracer now(this->tracer);
+        ThroughputTracer now(this->tracer);
         now.get_time();
-        Tracer::report(&now, &this->old_tracer, total);
-
-        printf("err_cnt: %llu", err_cnt);
+        ThroughputTracer::report(&now, &this->old_tracer, total);
 
         // this->latency_tracer.report(total);
+
+        printf("err_cnt: %llu", err_cnt);
 
         printf("\n");
     }
@@ -417,6 +416,31 @@ int parse_arg(int argc, char** argv)
     return 0;
 }
 
+int init_timerfd()
+{
+    int fd = timerfd_create(CLOCK_REALTIME, 0);
+
+    struct timespec now;
+    if (clock_gettime(CLOCK_REALTIME, &now) < 0)
+    {   perror("clock_gettime error");
+    }
+
+    int initial_expiration = 2;
+    int interval = 1;
+
+    struct itimerspec itimerspec;
+    itimerspec.it_value.tv_sec = now.tv_sec + initial_expiration;
+    itimerspec.it_value.tv_nsec = now.tv_nsec;
+    itimerspec.it_interval.tv_sec = interval;
+    itimerspec.it_interval.tv_nsec = 0;
+
+    if (timerfd_settime(fd, TFD_TIMER_ABSTIME, &itimerspec, NULL) < 0)
+    {   perror("timerfd_settime error");
+    }
+
+    return fd;
+}
+
 int main(int argc, char** argv)
 {
     if  (parse_arg(argc, argv) < 0)  return 0;
@@ -427,9 +451,17 @@ int main(int argc, char** argv)
         loops.push_back(std::make_unique<EventLoop>((struct sockaddr*)&dst_addr, conn_num, pkt_size));
     }
 
+
+
+    int fd = init_timerfd();
+
     for (int i = 0; i < duration; i++)
     {
-        sleep(1);
+        uint64_t val;
+        if  (read(fd, &val, sizeof(val)) != sizeof(val))
+        {   perror("read timerfd error");
+            break;
+        }
 
         Total total;
         for (int j = 0; j < loops.size(); j++)
@@ -443,6 +475,8 @@ int main(int argc, char** argv)
         
         printf("\n");
     }
+
+
 
     for (int i = 0; i < loops.size(); i++)
         loops[i]->running = false;
