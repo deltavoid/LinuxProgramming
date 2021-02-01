@@ -69,10 +69,6 @@ int parse_args(int argc, char** argv)
 }
 
 
-class Acceptor : public EpollHandler {
-public:
-    
-};
 
 class Connection : public EpollHandler {
 public:
@@ -95,6 +91,57 @@ public:
 
     virtual int handle(uint32_t ev)
     {
+        return 0;
+    }
+};
+
+class Acceptor : public EpollHandler {
+public:
+    int fd;
+    int epfd;
+
+    Acceptor(struct sockaddr_in* local_addr, int epfd)
+        : epfd(epfd)
+    {
+        fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+        if  (fd < 0)
+        {   perror("socket error");
+        }
+
+        if  (bind(fd, (struct sockaddr*)local_addr, (socklen_t)sizeof(*local_addr)) < 0)
+        {   perror("bind error");
+        }
+
+        // struct epoll_event event = {
+        //     .events = EPOLLIN ,
+        //     .data.ptr = this,
+        // };
+        struct epoll_event event;
+        event.events = EPOLLIN;
+        event.data.ptr = this;
+        if  (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event) < 0)
+        {   perror("epoll_ctl add error");
+        }
+
+    }
+
+    virtual ~Acceptor()
+    {
+        if  (epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL) < 0)
+        {   perror("epoll_ctl del error");
+        }
+
+        close(fd);
+    }
+
+    int listen(int backlog)
+    {
+        return ::listen(fd, backlog);
+    }
+
+    virtual int handle(uint32_t ev)
+    {
+        printf("Acceptor::handle\n");
         return 0;
     }
 };
@@ -146,7 +193,11 @@ int main(int argc, char** argv)
     EventLoop loop;
     // loop.thread->join();
     // sleep(10);
-    loop.run();
+    // loop.run();
+
+    Acceptor acceptor(&local_addr, loop.epfd);
+    acceptor.listen(10);
+    // acceptor.handle(EPOLLIN); 
 
 
     return 0;
