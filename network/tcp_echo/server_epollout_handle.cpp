@@ -75,10 +75,17 @@ public:
     int fd;
     int epfd;
 
+
+    char* buf;
+    // uint64_t f, p;
+
     Connection(int fd, int epfd)
         : fd(fd), epfd(epfd)
     {
         printf("Connection::Connection: fd: %d, epfd: %d\n", fd, epfd);
+
+        buf = new char[max_pkt_size];
+        // f = p = 0;
 
         struct epoll_event event;
         event.events = EPOLLIN;
@@ -94,13 +101,57 @@ public:
             perror("epoll_ctl del error");
         
         close(fd);
+
+        delete[] buf;
         printf("fd %d closed\n", fd);
     }
 
+
+
+
+    int handle_read()
+    {
+        int recv_len = ::recv(fd, buf, max_pkt_size, 0);
+        if  (recv_len <= 0)
+            return -1;
+
+        int send_len = ::send(fd, buf, recv_len, 0);
+        if  (send_len != recv_len)
+            return -1;
+
+        return 0;
+    }
+
+    int handle_write()
+    {
+        return 0;
+    }
+
+
     virtual int handle(uint32_t ev)
     {
+        int ret = -1;
         printf("Connection::handle: ev: %d\n", ev);
-        return -1;
+        // return -1;
+
+        if  (ev & ~(EPOLLIN | EPOLLOUT))
+            return -1;
+
+        // if  (ev & EPOLLOUT)
+        // {
+        //     ret = handle_write();
+        //     if  (ret < 0)
+        //         return ret;
+        // }
+            
+        if  (ev & EPOLLIN)
+        {
+            ret = handle_read();
+            if  (ret < 0)
+                return ret;
+        }
+            
+
         return 0;
     }
 };
