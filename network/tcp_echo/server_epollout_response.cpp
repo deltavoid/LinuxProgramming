@@ -23,6 +23,7 @@
 const int max_conn = 1024;
 const int max_events = max_conn;
 const int max_pkt_size = 64;// 1024;
+const int response_size = 1024 * 1024 * 1024;
 
 
 class EpollHandler
@@ -38,6 +39,7 @@ int thread_num = 1;
 int conn_num = 1;
 int pkt_size = 64;
 int duration = 10;
+char response_buf[response_size];
 
 
 int parse_args(int argc, char** argv)
@@ -169,6 +171,9 @@ public:
     int epfd;
 
     RingBuffer buf;
+    // RingBuffer send_buf;
+    int response_cnt;
+    int response_pos;
 
     bool enable_epollout;
 
@@ -178,6 +183,9 @@ public:
         printf("Connection::Connection: fd: %d, epfd: %d\n", fd, epfd);
 
         enable_epollout = false;
+
+        response_cnt = 0;
+        response_pos = response_size;
 
         struct epoll_event event;
         event.events = EPOLLIN;
@@ -227,67 +235,143 @@ public:
         };
         int recv_len = recvmsg(fd, &msg, 0);
         printf("Connection::recv_buf, recv_len: %d\n", recv_len);
-        if  (recv_len <= 0)
+
+        if  (recv_len == 0)
             return -1;
+        
+        if  (recv_len < 0)
+        {
+            if  (errno == EAGAIN || errno == EWOULDBLOCK)
+                recv_len = 0;
+            else
+                return -1;
+        }
 
         buf.add_exist(recv_len);
         printf("Connection::recv_buf, f: %llu, p: %llu\n", buf.f, buf.p);
         return recv_len;
     }
 
-    int send_buf()
-    {
-        int to_send = buf.get_exist_size();
-        if  (to_send <= 0)
-            return 0;
+    // int send_buf()
+    // {
+    //     int to_send = buf.get_exist_size();
+    //     if  (to_send <= 0)
+    //         return 0;
         
-        struct iovec iov[2];
-        size_t iov_len = 0;
-        buf.get_exist_iovec(iov, &iov_len);
+    //     struct iovec iov[2];
+    //     size_t iov_len = 0;
+    //     buf.get_exist_iovec(iov, &iov_len);
 
-        struct msghdr msg = {
-            .msg_name = NULL,
-            .msg_namelen = 0,
-            .msg_iov = iov,
-            .msg_iovlen = iov_len,
-            .msg_control = NULL,
-            .msg_controllen = 0
-        };
-        int send_len = sendmsg(fd, &msg, 0);
-        printf("Connection::send_buf, send_len: %d\n", send_len);
+    //     struct msghdr msg = {
+    //         .msg_name = NULL,
+    //         .msg_namelen = 0,
+    //         .msg_iov = iov,
+    //         .msg_iovlen = iov_len,
+    //         .msg_control = NULL,
+    //         .msg_controllen = 0
+    //     };
+    //     int send_len = sendmsg(fd, &msg, 0);
+    //     printf("Connection::send_buf, send_len: %d\n", send_len);
                 
-        if  (send_len < 0)
-        {
-            if  (errno == EAGAIN || errno == EWOULDBLOCK)
-            {   send_len = 0;
-            }
-            else
-                return -1;
-        }
+    //     if  (send_len < 0)
+    //     {
+    //         if  (errno == EAGAIN || errno == EWOULDBLOCK)
+    //         {   send_len = 0;
+    //         }
+    //         else
+    //             return -1;
+    //     }
 
-        buf.add_blank(send_len);
+    //     buf.add_blank(send_len);
 
-        if  (send_len == to_send)
-        {
-            if  (enable_epollout)
-                set_epollout(false);
-        }
-        else
-        {
-            if  (!enable_epollout)
-                set_epollout(true);
-        }
+    //     if  (send_len == to_send)
+    //     {
+    //         if  (enable_epollout)
+    //             set_epollout(false);
+    //     }
+    //     else
+    //     {
+    //         if  (!enable_epollout)
+    //             set_epollout(true);
+    //     }
 
-        printf("Connection:: send_buf, f: %llu, p: %llu\n", buf.f, buf.p);
-        return send_len;
-    }
+    //     printf("Connection:: send_buf, f: %llu, p: %llu\n", buf.f, buf.p);
+    //     return send_len;
+    // }
 
-    int handle_read()
+    int recv_request()
     {
+        printf("Connection::recv_request\n");
+        // int recv_len = 0;
+        // while ((recv_len = recv_buf()) > 0);
+        // if  (recv_len < 0)
+        //     return -1;
+
         if  (recv_buf() < 0)
             return -1;
 
-        if  (send_buf() < 0)
+        while (buf.get_exist_size() >= 8)
+        {   response_cnt++;
+            buf.add_blank(8);
+        }
+
+        if  (send_response() < 0)
+            return -1;
+
+        return 0;
+    }
+
+    // work with response state, multi entry
+    int send_response()
+    {
+        printf("Connection::send_response\n");
+
+        while (response_cnt > 0 || response_pos < response_size)
+        {
+            if  (response_pos == response_size)
+            {   if  (response_cnt > 0)
+                {   response_cnt--;
+                    response_pos = 0;
+                }    
+            }
+            
+            int send_len = ::send(fd, response_buf + response_pos, response_size - response_pos, 0);
+            printf("Connection::send_response, send_len: %d\n", send_len);
+            printf("Connection::send_response, response_cnt: %d, response_pos: 0x%x\n", response_cnt, response_pos);
+
+            if  (send_len < 0)
+            {
+                if  (errno == EAGAIN || errno == EWOULDBLOCK)
+                {   send_len = 0;            
+                }
+                else
+                    return -1;
+            }
+
+            response_pos += send_len;
+            if  (response_cnt == 0 && response_pos == response_size)
+            {
+                if  (enable_epollout)
+                    set_epollout(false);
+            }
+            else
+            {
+                if  (!enable_epollout)
+                    set_epollout(true);
+            }
+
+            if  (send_len == 0)
+                break;
+        }
+
+        return 0;
+    }
+
+
+    int handle_read()
+    {
+        printf("Connection::handle_read\n");
+        if  (recv_request() < 0)
             return -1;
         
         return 0;
@@ -295,7 +379,8 @@ public:
 
     int handle_write()
     {
-        if  (send_buf() < 0)
+        printf("Connection::handle_write\n");
+        if  (send_response() < 0)
             return -1;
         return 0;
     }
@@ -440,6 +525,10 @@ int main(int argc, char** argv)
     printf("hello world\n");
     if  (parse_args(argc, argv) < 0)
         return 1;
+
+    for (int i = 0; i < response_size; i++)
+        response_buf[i] = i;
+    printf("response_size: %d, 0x%x\n", response_size, response_size);
 
     EventLoop loop;
     // loop.thread->join();

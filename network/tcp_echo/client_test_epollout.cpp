@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
 #include <cstring>
 
 #include <unistd.h>
@@ -41,6 +42,13 @@ int main(int argc, char** argv)
     if  (ret < 0)  perror("connect error");
 
 
+    {
+        uint64_t buf;
+        int send_len = send(fd, &buf, sizeof(uint64_t), 0);
+        if  (send_len < sizeof(uint64_t))
+            return 1;
+    }
+
     // while (true)
     {
         // scanf("%s", read_buf);
@@ -51,7 +59,8 @@ int main(int argc, char** argv)
 
 
         int64_t recv_len = recv(fd, recv_buf, buf_size, 0);
-        int64_t total = *(int64_t*)recv_buf;
+        // int64_t total = *(int64_t*)recv_buf;
+        int64_t total = 1024 * 1024 * 1024;
         printf("total: %lld\n", total);
 
         while (recv_len < total)
