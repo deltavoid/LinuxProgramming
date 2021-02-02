@@ -85,6 +85,16 @@ public:
         delete buf;
     }
 
+    int get_blank_size()
+    {
+        return max_pkt_size - 1 - (p - f);
+    }
+
+    int get_exist_size()
+    {
+        return  p - f;
+    }
+
     int get_blank_iovec(struct iovec* iov, size_t* iov_len_p)
     {
         size_t& iov_len = *iov_len_p;
@@ -139,16 +149,6 @@ public:
         }
 
         return 0;
-    }
-
-    int get_blank_size()
-    {
-        return max_pkt_size - 1 - (p - f);
-    }
-
-    int get_exist_size()
-    {
-        return  p - f;
     }
 
     void add_blank(int v)
