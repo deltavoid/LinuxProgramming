@@ -79,6 +79,8 @@ public:
     char* buf;
     uint64_t f, p;
 
+    bool enable_epollout;
+
     Connection(int fd, int epfd)
         : fd(fd), epfd(epfd)
     {
@@ -86,6 +88,8 @@ public:
 
         buf = new char[max_pkt_size];
         f = p = 0;
+
+        enable_epollout = false;
 
         struct epoll_event event;
         event.events = EPOLLIN;
@@ -104,6 +108,17 @@ public:
 
         delete[] buf;
         printf("fd %d closed\n", fd);
+    }
+
+    void set_epollout(bool flag)
+    {
+        struct epoll_event event;
+        event.events = EPOLLIN | (flag? EPOLLOUT : 0);
+        // event.data.fd = fd;
+        event.data.ptr = this;
+        if  (epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &event) < 0)
+            perror("epoll_ctl error");
+        enable_epollout = flag;
     }
 
 
@@ -166,8 +181,8 @@ public:
 
     int send_buf()
     {
-        int existed = p - f;
-        if  (existed <= 0)
+        int to_send = p - f;
+        if  (to_send <= 0)
             return 0;
 
         struct iovec iov[2];
@@ -197,10 +212,30 @@ public:
         };
         int send_len = sendmsg(fd, &msg, 0);
         printf("Connection::send_buf, send_len: %d\n", send_len);
-        if  (send_len < 0)
-            return -1;
         
-        f += send_len;
+        
+        if  (send_len < 0)
+        {
+            if  (errno == EAGAIN || errno == EWOULDBLOCK)
+            {   send_len = 0;
+            }
+            else
+                return -1;
+        }
+
+            f += send_len;
+
+            if  (send_len == to_send)
+            {
+                if  (enable_epollout)
+                    set_epollout(false);
+            }
+            else
+            {
+                if  (!enable_epollout)
+                    set_epollout(true);
+            }
+
         printf("Connection:: send_buf, f: %llu, p: %llu\n", f, p);
         return send_len;
     }
@@ -219,6 +254,8 @@ public:
 
     int handle_write()
     {
+        if  (send_buf() < 0)
+            return -1;
         return 0;
     }
 
