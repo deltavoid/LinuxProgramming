@@ -168,9 +168,6 @@ public:
     int fd;
     int epfd;
 
-
-    // char* buf;
-    // uint64_t f, p;
     RingBuffer buf;
 
     bool enable_epollout;
@@ -179,9 +176,6 @@ public:
         : fd(fd), epfd(epfd)
     {
         printf("Connection::Connection: fd: %d, epfd: %d\n", fd, epfd);
-
-        // buf = new char[max_pkt_size];
-        // f = p = 0;
 
         enable_epollout = false;
 
@@ -199,8 +193,6 @@ public:
             perror("epoll_ctl del error");
         
         close(fd);
-
-        // delete[] buf;
         printf("fd %d closed\n", fd);
     }
 
@@ -208,7 +200,6 @@ public:
     {
         struct epoll_event event;
         event.events = EPOLLIN | (flag? EPOLLOUT : 0);
-        // event.data.fd = fd;
         event.data.ptr = this;
         if  (epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &event) < 0)
             perror("epoll_ctl error");
@@ -218,47 +209,13 @@ public:
 
     int recv_buf()
     {
-        // int buf_blank = max_pkt_size - 1 - (p - f);
-        // if  (buf_blank <= 0)
-        //     return 0;
         if  (buf.get_blank_size() <= 0)
             return 0;
 
         struct iovec iov[2];
         size_t iov_len = 0;
-        // int mf = f % max_pkt_size, mp = p % max_pkt_size;
-        // if  (mp < mf)
-        // {   iov[0].iov_base = buf + mp;
-        //     iov[0].iov_len = mf - mp - 1;
-        //     iov_len = 1;
-        // }
-        // else // mf <= mp
-        // {
-        //     if  (mf == 0)
-        //     {
-        //         iov[0].iov_base = buf + mp;
-        //         iov[0].iov_len = max_pkt_size - mp - 1;
-        //         iov_len = 1;
-        //     }
-        //     else if  (mf == 1)
-        //     {
-        //         iov[0].iov_base = buf + mp;
-        //         iov[0].iov_len = max_pkt_size - mp;
-        //         iov_len = 1;
-        //     }
-        //     else
-        //     {
-        //         iov[0].iov_base = buf + mp;
-        //         iov[0].iov_len = max_pkt_size - mp;
-        //         iov[1].iov_base = buf;
-        //         iov[1].iov_len = mf - 1;
-        //         iov_len = 2;
-        //     }
-        // }
         if  (buf.get_blank_iovec(iov, &iov_len) < 0)
             return 0;
-
-        
 
         struct msghdr msg = {
             .msg_name = NULL,
@@ -273,7 +230,6 @@ public:
         if  (recv_len <= 0)
             return -1;
 
-        // p += recv_len;
         buf.add_exist(recv_len);
         printf("Connection::recv_buf, f: %llu, p: %llu\n", buf.f, buf.p);
         return recv_len;
@@ -281,28 +237,12 @@ public:
 
     int send_buf()
     {
-        // int to_send = p - f;
         int to_send = buf.get_exist_size();
         if  (to_send <= 0)
             return 0;
         
-
         struct iovec iov[2];
         size_t iov_len = 0;
-
-        // int mf = f % max_pkt_size, mp = p % max_pkt_size;
-        // if  (mf <= mp)
-        // {   iov[0].iov_base = buf + mf;
-        //     iov[0].iov_len = mp - mf;
-        //     iov_len = 1;
-        // }
-        // else
-        // {   iov[0].iov_base = buf + mf;
-        //     iov[0].iov_len = max_pkt_size - mf;
-        //     iov[1].iov_base = buf;
-        //     iov[1].iov_len = mp;
-        //     iov_len = 2;
-        // }
         buf.get_exist_iovec(iov, &iov_len);
 
         struct msghdr msg = {
@@ -315,8 +255,7 @@ public:
         };
         int send_len = sendmsg(fd, &msg, 0);
         printf("Connection::send_buf, send_len: %d\n", send_len);
-        
-        
+                
         if  (send_len < 0)
         {
             if  (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -326,24 +265,22 @@ public:
                 return -1;
         }
 
-            // f += send_len;
         buf.add_blank(send_len);
 
-            if  (send_len == to_send)
-            {
-                if  (enable_epollout)
-                    set_epollout(false);
-            }
-            else
-            {
-                if  (!enable_epollout)
-                    set_epollout(true);
-            }
+        if  (send_len == to_send)
+        {
+            if  (enable_epollout)
+                set_epollout(false);
+        }
+        else
+        {
+            if  (!enable_epollout)
+                set_epollout(true);
+        }
 
         printf("Connection:: send_buf, f: %llu, p: %llu\n", buf.f, buf.p);
         return send_len;
     }
-
 
     int handle_read()
     {
@@ -363,7 +300,6 @@ public:
         return 0;
     }
 
-
     virtual int handle(uint32_t ev)
     {
         int ret = -1;
@@ -373,12 +309,12 @@ public:
         if  (ev & ~(EPOLLIN | EPOLLOUT))
             return -1;
 
-        // if  (ev & EPOLLOUT)
-        // {
-        //     ret = handle_write();
-        //     if  (ret < 0)
-        //         return ret;
-        // }
+        if  (ev & EPOLLOUT)
+        {
+            ret = handle_write();
+            if  (ret < 0)
+                return ret;
+        }
             
         if  (ev & EPOLLIN)
         {
