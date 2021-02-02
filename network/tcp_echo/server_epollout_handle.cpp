@@ -107,9 +107,7 @@ public:
     }
 
 
-
-
-    int handle_read()
+    int recv_buf()
     {
         // int recv_len = ::recv(fd, buf, max_pkt_size, 0);
         // if  (recv_len <= 0)
@@ -188,29 +186,79 @@ public:
             .msg_controllen = 0
         };
         int recv_len = recvmsg(fd, &msg, 0);
-        printf("Connection::handle_read, recv_len: %d\n", recv_len);
+        printf("Connection::recv_buf, recv_len: %d\n", recv_len);
         if  (recv_len <= 0)
             return -1;
 
-        
+        p += recv_len;
+        return recv_len;
+    }
 
+    int send_buf()
+    {
         // int send_len = -1;
-        // // if  (recv_len <= iov[0].iov_len)
-        // // {   iov[0].iov_len = recv_len;
-        // //     iov[1].iov_base = NULL;
-        // //     iov[1].iov_len = 0;
-        // //     msg.msg_iovlen = 1;
-        // //     send_len = sendmsg(fd, &msg, 0);
-        // // }
-        // // else
-        // // {   iov[1].iov_len = recv_len - iov[0].iov_len;
-        // //     send_len = sendmsg(fd, &msg, 0);
-        // // }
+        // if  (recv_len <= iov[0].iov_len)
+        // {   iov[0].iov_len = recv_len;
+        //     iov[1].iov_base = NULL;
+        //     iov[1].iov_len = 0;
+        //     msg.msg_iovlen = 1;
+        //     send_len = sendmsg(fd, &msg, 0);
+        // }
+        // else
+        // {   iov[1].iov_len = recv_len - iov[0].iov_len;
+        //     send_len = sendmsg(fd, &msg, 0);
+        // }
         // iov[0].iov_len = recv_len;
         // send_len = sendmsg(fd, &msg, 0);
 
-        // printf("Connection::handle_read, send_len: %d\n", send_len);
+        int existed = p - f;
+        if  (existed <= 0)
+            return 0;
 
+        struct iovec iov[2];
+        size_t iov_len = 0;
+
+        int mf = f % max_pkt_size, mp = p % max_pkt_size;
+        if  (mf <= mp)
+        {   iov[0].iov_base = buf + mf;
+            iov[0].iov_len = mp - mf;
+            iov_len = 1;
+        }
+        else
+        {   iov[0].iov_base = buf + mf;
+            iov[0].iov_len = max_pkt_size - mf;
+            iov[1].iov_base = buf;
+            iov[1].iov_len = mp;
+            iov_len = 2;
+        }
+
+        struct msghdr msg = {
+            .msg_name = NULL,
+            .msg_namelen = 0,
+            .msg_iov = iov,
+            .msg_iovlen = iov_len,
+            .msg_control = NULL,
+            .msg_controllen = 0
+        };
+        int send_len = sendmsg(fd, &msg, 0);
+        printf("Connection::send_buf, send_len: %d\n", send_len);
+        if  (send_len < 0)
+            return -1;
+        
+        f += send_len;
+        return send_len;
+    }
+
+
+
+    int handle_read()
+    {
+        if  (recv_buf() < 0)
+            return -1;
+
+        if  (send_buf() < 0)
+            return -1;
+        
         return 0;
     }
 
@@ -243,7 +291,6 @@ public:
             if  (ret < 0)
                 return ret;
         }
-            
 
         return 0;
     }
