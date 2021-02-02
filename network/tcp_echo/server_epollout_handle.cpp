@@ -118,15 +118,18 @@ public:
         // int send_len = ::send(fd, buf, recv_len, 0);
         // if  (send_len != recv_len)
         //     return -1;
-        if  (!(p - f <= max_pkt_size - 1))
+        int buf_blank = max_pkt_size - 1 - (p - f);
+        if  (buf_blank <= 0)
             return 0;
+        // if  (!(p - f < max_pkt_size - 1))
+        //     return 0;
 
         struct iovec iov[2];
         size_t iov_len = 0;
 
-        iov[0].iov_base = buf;
-        iov[0].iov_len = max_pkt_size;
-        iov_len = 1;
+        // iov[0].iov_base = buf;
+        // iov[0].iov_len = max_pkt_size;
+        // iov_len = 1;
 
         // if  (f % max_pkt_size <= p % max_pkt_size)
         // {   iov[0].iov_base = buf + p % max_pkt_size;
@@ -145,6 +148,37 @@ public:
         //     iov_len = 1;
         // }
 
+        int mf = f % max_pkt_size, mp = p % max_pkt_size;
+        if  (mp < mf)
+        {   iov[0].iov_base = buf + mp;
+            iov[0].iov_len = mf - mp - 1;
+            iov_len = 1;
+        }
+        else // mf <= mp
+        {
+            if  (mf == 0)
+            {
+                iov[0].iov_base = buf + mp;
+                iov[0].iov_len = max_pkt_size - mp - 1;
+                iov_len = 1;
+            }
+            else if  (mf == 1)
+            {
+                iov[0].iov_base = buf + mp;
+                iov[0].iov_len = max_pkt_size - mp;
+                iov_len = 1;
+            }
+            else
+            {
+                iov[0].iov_base = buf + mp;
+                iov[0].iov_len = max_pkt_size - mp;
+                iov[1].iov_base = buf;
+                iov[1].iov_len = mf - 1;
+                iov_len = 2;
+            }
+        }
+
+
         struct msghdr msg = {
             .msg_name = NULL,
             .msg_namelen = 0,
@@ -160,22 +194,22 @@ public:
 
         
 
-        int send_len = -1;
-        // if  (recv_len <= iov[0].iov_len)
-        // {   iov[0].iov_len = recv_len;
-        //     iov[1].iov_base = NULL;
-        //     iov[1].iov_len = 0;
-        //     msg.msg_iovlen = 1;
-        //     send_len = sendmsg(fd, &msg, 0);
-        // }
-        // else
-        // {   iov[1].iov_len = recv_len - iov[0].iov_len;
-        //     send_len = sendmsg(fd, &msg, 0);
-        // }
-        iov[0].iov_len = recv_len;
-        send_len = sendmsg(fd, &msg, 0);
+        // int send_len = -1;
+        // // if  (recv_len <= iov[0].iov_len)
+        // // {   iov[0].iov_len = recv_len;
+        // //     iov[1].iov_base = NULL;
+        // //     iov[1].iov_len = 0;
+        // //     msg.msg_iovlen = 1;
+        // //     send_len = sendmsg(fd, &msg, 0);
+        // // }
+        // // else
+        // // {   iov[1].iov_len = recv_len - iov[0].iov_len;
+        // //     send_len = sendmsg(fd, &msg, 0);
+        // // }
+        // iov[0].iov_len = recv_len;
+        // send_len = sendmsg(fd, &msg, 0);
 
-        printf("Connection::handle_read, send_len: %d\n", send_len);
+        // printf("Connection::handle_read, send_len: %d\n", send_len);
 
         return 0;
     }
