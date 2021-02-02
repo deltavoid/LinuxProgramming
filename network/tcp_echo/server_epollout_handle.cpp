@@ -22,7 +22,7 @@
 
 const int max_conn = 1024;
 const int max_events = max_conn;
-const int max_pkt_size = 1024;
+const int max_pkt_size = 64;// 1024;
 
 
 class EpollHandler
@@ -160,6 +160,7 @@ public:
             return -1;
 
         p += recv_len;
+        printf("Connection:: recv_buf, f: %llu, p: %llu\n", f, p);
         return recv_len;
     }
 
@@ -200,6 +201,7 @@ public:
             return -1;
         
         f += send_len;
+        printf("Connection:: send_buf, f: %llu, p: %llu\n", f, p);
         return send_len;
     }
 
