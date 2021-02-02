@@ -69,68 +69,25 @@ int parse_args(int argc, char** argv)
 }
 
 
-
-class Connection : public EpollHandler {
+class RingBuffer {
 public:
-    int fd;
-    int epfd;
-
-
-    char* buf;
     uint64_t f, p;
+    char* buf;
 
-    bool enable_epollout;
-
-    Connection(int fd, int epfd)
-        : fd(fd), epfd(epfd)
+    RingBuffer()
     {
-        printf("Connection::Connection: fd: %d, epfd: %d\n", fd, epfd);
-
-        buf = new char[max_pkt_size];
         f = p = 0;
-
-        enable_epollout = false;
-
-        struct epoll_event event;
-        event.events = EPOLLIN;
-        event.data.ptr = this;
-        if  (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event) < 0)
-        {   perror("epoll_ctl add error");
-        }
+        buf = new char[max_pkt_size];
     }
 
-    virtual ~Connection()
+    ~RingBuffer()
     {
-        if  (epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL) < 0)
-            perror("epoll_ctl del error");
-        
-        close(fd);
-
-        delete[] buf;
-        printf("fd %d closed\n", fd);
+        delete buf;
     }
 
-    void set_epollout(bool flag)
+    int get_blank_iovec(struct iovec* iov, size_t* iov_len_p)
     {
-        struct epoll_event event;
-        event.events = EPOLLIN | (flag? EPOLLOUT : 0);
-        // event.data.fd = fd;
-        event.data.ptr = this;
-        if  (epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &event) < 0)
-            perror("epoll_ctl error");
-        enable_epollout = flag;
-    }
-
-
-    int recv_buf()
-    {
-        int buf_blank = max_pkt_size - 1 - (p - f);
-        if  (buf_blank <= 0)
-            return 0;
-
-        struct iovec iov[2];
-        size_t iov_len = 0;
-
+        size_t& iov_len = *iov_len_p;
         int mf = f % max_pkt_size, mp = p % max_pkt_size;
         if  (mp < mf)
         {   iov[0].iov_base = buf + mp;
@@ -161,33 +118,12 @@ public:
             }
         }
 
-        struct msghdr msg = {
-            .msg_name = NULL,
-            .msg_namelen = 0,
-            .msg_iov = iov,
-            .msg_iovlen = iov_len,
-            .msg_control = NULL,
-            .msg_controllen = 0
-        };
-        int recv_len = recvmsg(fd, &msg, 0);
-        printf("Connection::recv_buf, recv_len: %d\n", recv_len);
-        if  (recv_len <= 0)
-            return -1;
-
-        p += recv_len;
-        printf("Connection:: recv_buf, f: %llu, p: %llu\n", f, p);
-        return recv_len;
+        return 0;
     }
 
-    int send_buf()
+    int get_exist_iovec(struct iovec* iov, size_t* iov_len_p)
     {
-        int to_send = p - f;
-        if  (to_send <= 0)
-            return 0;
-
-        struct iovec iov[2];
-        size_t iov_len = 0;
-
+        size_t& iov_len = *iov_len_p;
         int mf = f % max_pkt_size, mp = p % max_pkt_size;
         if  (mf <= mp)
         {   iov[0].iov_base = buf + mf;
@@ -201,6 +137,173 @@ public:
             iov[1].iov_len = mp;
             iov_len = 2;
         }
+
+        return 0;
+    }
+
+    int get_blank_size()
+    {
+        return max_pkt_size - 1 - (p - f);
+    }
+
+    int get_exist_size()
+    {
+        return  p - f;
+    }
+
+    void add_blank(int v)
+    {
+        f += v;
+    }
+
+    void add_exist(int v)
+    {
+        p += v;
+    }
+};
+
+
+class Connection : public EpollHandler {
+public:
+    int fd;
+    int epfd;
+
+
+    // char* buf;
+    // uint64_t f, p;
+    RingBuffer buf;
+
+    bool enable_epollout;
+
+    Connection(int fd, int epfd)
+        : fd(fd), epfd(epfd)
+    {
+        printf("Connection::Connection: fd: %d, epfd: %d\n", fd, epfd);
+
+        // buf = new char[max_pkt_size];
+        // f = p = 0;
+
+        enable_epollout = false;
+
+        struct epoll_event event;
+        event.events = EPOLLIN;
+        event.data.ptr = this;
+        if  (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event) < 0)
+        {   perror("epoll_ctl add error");
+        }
+    }
+
+    virtual ~Connection()
+    {
+        if  (epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL) < 0)
+            perror("epoll_ctl del error");
+        
+        close(fd);
+
+        // delete[] buf;
+        printf("fd %d closed\n", fd);
+    }
+
+    void set_epollout(bool flag)
+    {
+        struct epoll_event event;
+        event.events = EPOLLIN | (flag? EPOLLOUT : 0);
+        // event.data.fd = fd;
+        event.data.ptr = this;
+        if  (epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &event) < 0)
+            perror("epoll_ctl error");
+        enable_epollout = flag;
+    }
+
+
+    int recv_buf()
+    {
+        // int buf_blank = max_pkt_size - 1 - (p - f);
+        // if  (buf_blank <= 0)
+        //     return 0;
+        if  (buf.get_blank_size() <= 0)
+            return 0;
+
+        struct iovec iov[2];
+        size_t iov_len = 0;
+        // int mf = f % max_pkt_size, mp = p % max_pkt_size;
+        // if  (mp < mf)
+        // {   iov[0].iov_base = buf + mp;
+        //     iov[0].iov_len = mf - mp - 1;
+        //     iov_len = 1;
+        // }
+        // else // mf <= mp
+        // {
+        //     if  (mf == 0)
+        //     {
+        //         iov[0].iov_base = buf + mp;
+        //         iov[0].iov_len = max_pkt_size - mp - 1;
+        //         iov_len = 1;
+        //     }
+        //     else if  (mf == 1)
+        //     {
+        //         iov[0].iov_base = buf + mp;
+        //         iov[0].iov_len = max_pkt_size - mp;
+        //         iov_len = 1;
+        //     }
+        //     else
+        //     {
+        //         iov[0].iov_base = buf + mp;
+        //         iov[0].iov_len = max_pkt_size - mp;
+        //         iov[1].iov_base = buf;
+        //         iov[1].iov_len = mf - 1;
+        //         iov_len = 2;
+        //     }
+        // }
+        if  (buf.get_blank_iovec(iov, &iov_len) < 0)
+            return 0;
+
+        
+
+        struct msghdr msg = {
+            .msg_name = NULL,
+            .msg_namelen = 0,
+            .msg_iov = iov,
+            .msg_iovlen = iov_len,
+            .msg_control = NULL,
+            .msg_controllen = 0
+        };
+        int recv_len = recvmsg(fd, &msg, 0);
+        printf("Connection::recv_buf, recv_len: %d\n", recv_len);
+        if  (recv_len <= 0)
+            return -1;
+
+        // p += recv_len;
+        buf.add_exist(recv_len);
+        printf("Connection::recv_buf, f: %llu, p: %llu\n", buf.f, buf.p);
+        return recv_len;
+    }
+
+    int send_buf()
+    {
+        // int to_send = p - f;
+        int to_send = buf.get_exist_size();
+        if  (to_send <= 0)
+            return 0;
+        
+
+        struct iovec iov[2];
+        size_t iov_len = 0;
+
+        // int mf = f % max_pkt_size, mp = p % max_pkt_size;
+        // if  (mf <= mp)
+        // {   iov[0].iov_base = buf + mf;
+        //     iov[0].iov_len = mp - mf;
+        //     iov_len = 1;
+        // }
+        // else
+        // {   iov[0].iov_base = buf + mf;
+        //     iov[0].iov_len = max_pkt_size - mf;
+        //     iov[1].iov_base = buf;
+        //     iov[1].iov_len = mp;
+        //     iov_len = 2;
+        // }
+        buf.get_exist_iovec(iov, &iov_len);
 
         struct msghdr msg = {
             .msg_name = NULL,
@@ -223,7 +326,8 @@ public:
                 return -1;
         }
 
-            f += send_len;
+            // f += send_len;
+        buf.add_blank(send_len);
 
             if  (send_len == to_send)
             {
@@ -236,7 +340,7 @@ public:
                     set_epollout(true);
             }
 
-        printf("Connection:: send_buf, f: %llu, p: %llu\n", f, p);
+        printf("Connection:: send_buf, f: %llu, p: %llu\n", buf.f, buf.p);
         return send_len;
     }
 
