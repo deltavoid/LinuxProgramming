@@ -357,13 +357,12 @@ public:
             {   if  (enable_epollout)
                     set_epollout(false);
             }
-            else
+            else if  (send_len == 0)
             {   if  (!enable_epollout)
                     set_epollout(true);
-            }
-
-            if  (send_len == 0)
                 break;
+            }
+            
         }
 
         return 0;
