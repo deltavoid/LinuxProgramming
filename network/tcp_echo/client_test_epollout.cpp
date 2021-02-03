@@ -60,8 +60,8 @@ int main(int argc, char** argv)
 
         int64_t recv_len = recv(fd, recv_buf, buf_size, 0);
         // int64_t total = *(int64_t*)recv_buf;
-        int64_t total = 1024 * 1024 * 1024;
-        printf("total: %lld\n", total);
+        int64_t total = 256 * 1024 * 1024;
+        printf("total: 0x%lx\n", total);
 
         while (recv_len < total)
         {

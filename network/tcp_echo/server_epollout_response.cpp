@@ -23,7 +23,7 @@
 const int max_conn = 1024;
 const int max_events = max_conn;
 const int max_pkt_size = 64;// 1024;
-const int response_size = 1024 * 1024 * 1024;
+const int64_t response_size = 256 * 1024 * 1024;
 
 
 class EpollHandler
@@ -172,8 +172,8 @@ public:
 
     RingBuffer buf;
     // RingBuffer send_buf;
-    int response_cnt;
-    int response_pos;
+    int64_t response_cnt;
+    int64_t response_pos;
 
     bool enable_epollout;
 
@@ -206,6 +206,7 @@ public:
 
     void set_epollout(bool flag)
     {
+        printf("Connection::set_epollout: %d\n", flag);
         struct epoll_event event;
         event.events = EPOLLIN | (flag? EPOLLOUT : 0);
         event.data.ptr = this;
@@ -335,28 +336,29 @@ public:
                 }    
             }
             
-            int send_len = ::send(fd, response_buf + response_pos, response_size - response_pos, 0);
+            int64_t send_len = ::send(fd, response_buf + response_pos, response_size - response_pos, 0);
             printf("Connection::send_response, send_len: %d\n", send_len);
-            printf("Connection::send_response, response_cnt: %d, response_pos: 0x%x\n", response_cnt, response_pos);
+            // printf("Connection::send_response, response_cnt: %d, response_pos: 0x%x\n", response_cnt, response_pos);
 
             if  (send_len < 0)
             {
                 if  (errno == EAGAIN || errno == EWOULDBLOCK)
-                {   send_len = 0;            
+                {   printf("Connection::send_response, get EAGAIN\n");
+                    send_len = 0;            
                 }
                 else
                     return -1;
             }
 
             response_pos += send_len;
+            printf("Connection::send_response, response_cnt: %d, response_pos: 0x%x\n", response_cnt, response_pos);
+            
             if  (response_cnt == 0 && response_pos == response_size)
-            {
-                if  (enable_epollout)
+            {   if  (enable_epollout)
                     set_epollout(false);
             }
             else
-            {
-                if  (!enable_epollout)
+            {   if  (!enable_epollout)
                     set_epollout(true);
             }
 
@@ -505,6 +507,7 @@ public:
     {
         while (running)
         {
+            printf("EventLoop::run: -------------------------------------------------\n");
             int num = epoll_wait(epfd, events, max_events, -1);
             printf("EventLoop::run: epoll_wait ret %d\n", num);
 
