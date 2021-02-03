@@ -235,6 +235,42 @@ public:
         return recv_len;
     }
 
+    int recv_buf_native()
+    {
+        if  (buf.get_blank_size() <= 0)
+            return 0;
+
+        struct iovec iov[2];
+        size_t iov_len = 0;
+        if  (buf.get_blank_iovec(iov, &iov_len) < 0)
+            return 0;
+
+        int ret = 0;
+        for (int i = 0; i < iov_len; i++)
+        {
+            int recv_len = ::recv(fd, iov[i].iov_base, iov[i].iov_len, 0);
+            printf("Connection::recv_buf_native, recv_len: %d, iov[%d].len: %d\n", recv_len, i, iov[i].iov_len);
+
+            if  (recv_len == 0)
+                return -1;
+            
+            if  (recv_len < 0)
+            {   if  (errno == EAGAIN || errno == EWOULDBLOCK)
+                    recv_len = 0;
+                else
+                    return -1;
+            }
+
+            buf.add_exist(recv_len);
+            printf("Connection::recv_buf_native, f: %llu, p: %llu\n", buf.f, buf.p);
+            ret += recv_len;
+            if  (recv_len < iov[i].iov_len)
+                break;
+        }
+
+        return ret;
+    }
+
     int send_buf()
     {
         int to_send = buf.get_exist_size();
@@ -278,13 +314,15 @@ public:
                 set_epollout(true);
         }
 
-        printf("Connection:: send_buf, f: %llu, p: %llu\n", buf.f, buf.p);
+        printf("Connection::send_buf, f: %llu, p: %llu\n", buf.f, buf.p);
         return send_len;
     }
 
     int handle_read()
     {
-        if  (recv_buf() < 0)
+        // if  (recv_buf() < 0)
+        //     return -1;
+        if  (recv_buf_native() < 0)
             return -1;
 
         if  (send_buf() < 0)
@@ -420,6 +458,7 @@ public:
     {
         while (running)
         {
+            printf("EventLoop::run: ------------------------------------------\n");
             int num = epoll_wait(epfd, events, max_events, -1);
             printf("EventLoop::run: epoll_wait ret %d\n", num);
 

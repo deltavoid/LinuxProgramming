@@ -45,7 +45,7 @@ run_server_epollout_simple: server_epollout_simple
 	./$< $(PORT)
 
 run_client: client
-	./client 127.0.0.1 $(PORT) 2 5
+	./client 127.0.0.1 $(PORT) 1 3
 
 run_client_epoll_bench: client_epoll_bench
 	numactl --cpubind=1 --membind=1 ./client_epoll_bench 127.0.0.1 $(PORT) 1 4 64 1000
