@@ -303,10 +303,6 @@ public:
     int recv_request()
     {
         printf("Connection::recv_request\n");
-        // int recv_len = 0;
-        // while ((recv_len = recv_buf()) > 0);
-        // if  (recv_len < 0)
-        //     return -1;
 
         if  (recv_buf() < 0)
             return -1;
@@ -362,7 +358,6 @@ public:
                     set_epollout(true);
                 break;
             }
-            
         }
 
         return 0;
