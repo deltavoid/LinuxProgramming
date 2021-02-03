@@ -143,11 +143,18 @@ public:
             iov_len = 1;
         }
         else
-        {   iov[0].iov_base = buf + mf;
-            iov[0].iov_len = max_pkt_size - mf;
-            iov[1].iov_base = buf;
-            iov[1].iov_len = mp;
-            iov_len = 2;
+        {   if  (mp == 0)
+            {   iov[0].iov_base = buf + mf;
+                iov[0].iov_len = max_pkt_size - mf;
+                iov_len = 1;
+            }
+            else
+            {   iov[0].iov_base = buf + mf;
+                iov[0].iov_len = max_pkt_size - mf;
+                iov[1].iov_base = buf;
+                iov[1].iov_len = mp;
+                iov_len = 2;
+            }
         }
 
         return 0;
