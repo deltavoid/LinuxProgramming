@@ -141,11 +141,18 @@ public:
             iov_len = 1;
         }
         else
-        {   iov[0].iov_base = buf + mf;
-            iov[0].iov_len = max_pkt_size - mf;
-            iov[1].iov_base = buf;
-            iov[1].iov_len = mp;
-            iov_len = 2;
+        {   if  (mp == 0)
+            {   iov[0].iov_base = buf + mf;
+                iov[0].iov_len = max_pkt_size - mf;
+                iov_len = 1;
+            }
+            else
+            {   iov[0].iov_base = buf + mf;
+                iov[0].iov_len = max_pkt_size - mf;
+                iov[1].iov_base = buf;
+                iov[1].iov_len = mp;
+                iov_len = 2;
+            }
         }
 
         return 0;
@@ -318,6 +325,47 @@ public:
         return send_len;
     }
 
+    int send_buf_native()
+    {
+        int to_send = buf.get_exist_size();
+        if  (to_send <= 0)
+            return 0;
+        
+        struct iovec iov[2];
+        size_t iov_len = 0;
+        buf.get_exist_iovec(iov, &iov_len);
+
+        int have_send = 0;
+        for (int i = 0; i < iov_len; i++)
+        {
+            int send_len = send(fd, iov[i].iov_base, iov[i].iov_len, 0);
+            printf("Connection::send_buf_native, send_len: %d, iov[%d].len: %d\n", send_len, i, iov[i].iov_len);
+
+            if  (send_len < 0)
+            {   if  (errno == EAGAIN || errno == EWOULDBLOCK)
+                    send_len = 0;
+                else
+                    return -1;
+            }
+
+            buf.add_blank(send_len);
+            printf("Connection::send_buf_native, f: %llu, p: %llu\n", buf.f, buf.p);
+            have_send += send_len;
+
+            if  (have_send == to_send)
+            {   if  (enable_epollout)
+                    set_epollout(false);
+            }
+            else if  (send_len < iov[i].iov_len)
+            {   if  (!enable_epollout)
+                    set_epollout(true);
+                break;
+            }
+        }
+
+        return have_send;
+    }
+
     int handle_read()
     {
         // if  (recv_buf() < 0)
@@ -325,7 +373,9 @@ public:
         if  (recv_buf_native() < 0)
             return -1;
 
-        if  (send_buf() < 0)
+        // if  (send_buf() < 0)
+        //     return -1;
+        if  (send_buf_native() < 0)
             return -1;
         
         return 0;
