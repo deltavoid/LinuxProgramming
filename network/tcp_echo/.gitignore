@@ -15,5 +15,7 @@ server_poll_handle
 server_epoll_et
 server_epoll_et_ref
 server_epollout
+server_epollout_handle
+server_epollout_response
 server_epollout_simple
 server_epollout_ref
