@@ -270,8 +270,15 @@ class Connection
             for (int i = 0; i < pkt_size; i += sizeof(uint64_t))
             {
                 uint64_t val = *(uint64_t*)(rx_buf + i);
-                if  (val != rx_seq++)
+                if  (val != rx_seq)
+                {
                     (*err_cnt_p)++;
+
+                    printf("fd: %d, expect val: %llu, actual val: %llu\n", 
+                            fd, rx_seq, val);
+                }
+                
+                rx_seq++;
             }
         }
 
