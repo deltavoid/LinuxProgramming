@@ -345,11 +345,11 @@ class EventLoop
             printf("establish connection on fd %d\n", fd);
         }
 
-        running = true;
-        thread = std::make_unique<std::thread>( [this] () {  this->run();} );
-
         for (int i = 0; i < conns.size(); i++)
             conns[i]->send();
+
+        running = true;
+        thread = std::make_unique<std::thread>( [this] () {  this->run();} );
     }
 
     ~EventLoop()
