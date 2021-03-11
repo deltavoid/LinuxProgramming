@@ -208,8 +208,9 @@ void Total::report()
         printf("%s: %.2lf  ", ThroughputTracer::item_name[i], data[i]);
     }
 
-    printf("latency avg us: %.2lf  ", latencies / num);
-    printf("latency p99 us: %lld\n", ::get_p99(&tails, num / 100));
+    // printf("latency avg us: %.2lf  ", latencies / num);
+    // printf("latency p99 us: %lld\n", ::get_p99(&tails, num / 100));
+    printf("\n");
 }
 
 
