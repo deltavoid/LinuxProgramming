@@ -227,7 +227,7 @@ class Connection
     {
     }
 
-    ~Connection() 
+    ~Connection()
     {
         close(fd);
     }
@@ -242,9 +242,11 @@ class Connection
         tracer->add(tracer->TX_BYTE, sent);
     }
 
-    void recv()
+    int recv()
     {
         int recd = ::recv(fd, rx_buf, pkt_size, 0);
+        if  (recd <= 0)
+            return -1;
 
         if  (recd == pkt_size)
         {   struct timeval now;
@@ -261,6 +263,8 @@ class Connection
         tracer->inc(tracer->RX_PKT);
         tracer->add(tracer->RX_BYTE, recd);
         // printf("fd %d recv %d bytes\n", fd, recd);
+
+        return recd;
     }
 
     // void handle()
@@ -268,7 +272,9 @@ class Connection
     {
         if  (events & EPOLLIN)
         {
-            recv();
+
+            if  (recv() < 0)
+                return -1;
 
             send();
 
@@ -344,14 +350,23 @@ class EventLoop
 
             for (int i = 0; i < num; i++)
             {
-                conns[events[i].data.u32]->handle(events[i].events);
+                int ret = conns[events[i].data.u32]->handle(events[i].events);
+
+                if  (ret < 0)
+                {
+                    running = false;
+                    break;
+                }
             }
         }
     }
 
     // work in main thread
-    void report(Total* total)
+    int report(Total* total)
     {
+        if  (!running) 
+            return -1;
+        
         ThroughputTracer now(this->tracer);
         now.get_time();
         ThroughputTracer::report(&now, &this->old_tracer, total);
@@ -359,6 +374,7 @@ class EventLoop
         this->latency_tracer.report(total);
 
         printf("\n");
+        return 0;
     }
 
 };
@@ -433,8 +449,9 @@ int main(int argc, char** argv)
 
 
     int fd = init_timerfd();
+    bool running = true;
 
-    for (int i = 0; i < duration; i++)
+    for (int i = 0; i < duration && running; i++)
     {
         uint64_t val;
         if  (read(fd, &val, sizeof(val)) != sizeof(val))
@@ -446,7 +463,9 @@ int main(int argc, char** argv)
         for (int j = 0; j < loops.size(); j++)
         {
             printf("%2d: ", j);
-            loops[j]->report(&total);
+            int ret = loops[j]->report(&total);
+            if  (ret < 0)
+                running = false;
         }
             
         printf("all ");
