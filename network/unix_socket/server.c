@@ -12,15 +12,23 @@
  
 #define MAXLINE 80  
  
-char *socket_path = "server.socket";  
+char *default_socket_path = "server.socket";  
+char* socket_path = NULL;
  
-int main(void)  
+int main(int argc, char** argv)  
 {  
     struct sockaddr_un serun, cliun;  
     socklen_t cliun_len;  
     int listenfd, connfd, size;  
     char buf[MAXLINE];  
     int i, n;  
+
+
+    socket_path = default_socket_path;
+    if  (argc > 1)
+    {
+        socket_path = argv[1];
+    }
  
     if ((listenfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {  
         perror("socket error");  

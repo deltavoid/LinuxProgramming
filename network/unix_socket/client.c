@@ -14,14 +14,26 @@
 #define MAXLINE 80  
  
 char *client_path = "client.socket";  
-char *server_path = "server.socket";  
+
+char *default_server_path = "server.socket";  
+char* server_path = NULL;
  
-int main() {  
+int main(int argc, char** argv) 
+{  
     struct  sockaddr_un cliun, serun;  
     int len;  
     char buf[100];  
     int sockfd, n;  
  
+
+    server_path = default_server_path;
+    if  (argc > 1)
+    {   server_path = argv[1];
+    }
+
+
+
+
     if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0){  
         perror("client socket error");  
         exit(1);  
